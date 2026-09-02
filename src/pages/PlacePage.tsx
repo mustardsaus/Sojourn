@@ -1,0 +1,114 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Header } from "@/components/layout/Header";
+import { RouteControls } from "@/components/place/RouteControls";
+import { RouteMap } from "@/components/place/RouteMap";
+import { PlaceDetailCard } from "@/components/place/PlaceDetailCard";
+import { EmptyState } from "@/components/common/EmptyState";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { useRoute } from "@/hooks/useRoute";
+import { locationRepository } from "@/data/repository";
+import type { Location } from "@/types/location";
+
+export function PlacePage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [location, setLocation] = useState<Location | null | undefined>(undefined);
+  const [allLocations, setAllLocations] = useState<Location[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    setLocation(undefined);
+    locationRepository.getById(id).then((result) => setLocation(result ?? null));
+  }, [id]);
+
+  useEffect(() => {
+    locationRepository.getAll().then(setAllLocations);
+  }, []);
+
+  if (location === undefined) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-bg">
+        <LoadingSpinner className="size-6 text-accent" />
+      </div>
+    );
+  }
+
+  if (location === null) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-bg px-6">
+        <EmptyState title="We couldn't find that place" description="It may have been removed, or the link is off." />
+        <button
+          onClick={() => navigate("/")}
+          className="rounded-[10px] border border-accent-soft bg-accent px-5 py-2.5 font-display text-xs text-white"
+        >
+          Back to the map
+        </button>
+      </div>
+    );
+  }
+
+  return <PlacePageContent location={location} allLocations={allLocations} />;
+}
+
+function PlacePageContent({ location, allLocations }: { location: Location; allLocations: Location[] }) {
+  const route = useRoute(location);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.28 }}
+      className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-4 bg-bg pb-[max(2rem,env(safe-area-inset-bottom))]"
+    >
+      <div className="px-6 pt-[max(2.5rem,env(safe-area-inset-top))]">
+        <Header titleBeforeAccent="Plotting your" />
+      </div>
+
+      <div className="flex flex-col gap-4 px-6">
+        <RouteControls
+          origin={route.origin}
+          onOriginChange={route.setOrigin}
+          destination={location}
+          savedLocations={allLocations}
+        />
+
+        <div className="relative h-[230px] w-full overflow-hidden rounded-[14px] shadow-card">
+          <RouteMap origin={route.origin} originCoordinates={route.originCoordinates} destination={location} />
+
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-center justify-between gap-2">
+            <div className="pointer-events-auto rounded-full bg-scrim px-3 py-1.5 font-display text-xs text-text backdrop-blur-sm">
+              {route.durationLabel} · {route.distanceKm.toFixed(1)} km
+            </div>
+            <a
+              href={route.googleMapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-accent-soft bg-accent px-3.5 py-1.5 font-display text-xs text-white shadow-sm transition-transform active:scale-95"
+            >
+              Open in Google Maps
+              <ExternalIcon />
+            </a>
+          </div>
+        </div>
+
+        <PlaceDetailCard location={location} />
+      </div>
+    </motion.div>
+  );
+}
+
+function ExternalIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M7 17L17 7M17 7H9M17 7v8"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

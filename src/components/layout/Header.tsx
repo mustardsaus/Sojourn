@@ -20,7 +20,7 @@ export function Header({ titleBeforeAccent, className }: HeaderProps) {
         <div className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-1 font-display text-xs text-text"
+            className="flex items-center gap-1 font-display text-sm text-text"
             aria-expanded={menuOpen}
           >
             Maps
@@ -71,7 +71,7 @@ export function Header({ titleBeforeAccent, className }: HeaderProps) {
         </div>
         <ThemeToggle />
       </div>
-      <h1 className="mt-4 font-display text-[26px] leading-[30px] text-text">
+      <h1 className="mt-6 font-display text-[36px] leading-[40px] text-text">
         <span className="text-text-soft">{titleBeforeAccent}</span> <span className="text-accent">Sojourn</span>
       </h1>
     </header>

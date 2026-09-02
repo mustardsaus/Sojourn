@@ -6,7 +6,7 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { SearchResults } from "@/components/search/SearchResults";
 import { CategoryFilter } from "@/components/filters/CategoryFilter";
 import { MapView } from "@/components/map/MapView";
-import { LocationMarkers } from "@/components/map/LocationMarkers";
+import type { MapMarkerSpec } from "@/hooks/useMapMarkers";
 import { LocationPreviewCard } from "@/components/cards/LocationPreviewCard";
 import { ViewportLocationCards } from "@/components/cards/ViewportLocationCards";
 import { MapLoadingOverlay } from "@/components/common/LoadingSpinner";
@@ -52,6 +52,22 @@ export function Dashboard() {
     [filteredLocations, bounds],
   );
 
+  const markers = useMemo<MapMarkerSpec[]>(() => {
+    const pins: MapMarkerSpec[] = filteredLocations.map((location) => ({
+      id: location.id,
+      coordinates: location.coordinates,
+      kind: "category",
+      category: location.topLevelCategory,
+      active: location.id === selected?.id,
+      onClick: () => selectLocation(location),
+    }));
+    if (geo.status === "granted") {
+      pins.push({ id: "__you__", coordinates: geo.coordinates, kind: "you" });
+    }
+    return pins;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredLocations, selected?.id, geo.status, geo.coordinates]);
+
   function goToPlace(location: Location) {
     navigate(`/place/${location.id}`);
   }
@@ -87,7 +103,7 @@ export function Dashboard() {
 
       {!(searchFocused || query.trim().length > 0) && (
         <div className="mt-4 flex flex-1 flex-col gap-4 px-6">
-          <div className="relative h-[400px] shrink-0 overflow-hidden rounded-[14px] shadow-card">
+          <div className="relative h-[400px] shrink-0 overflow-hidden rounded-[14px]">
             {!allLocations && <MapLoadingOverlay />}
             <MapView
               center={geo.coordinates}
@@ -95,16 +111,8 @@ export function Dashboard() {
               flyTo={selected?.coordinates}
               flyToToken={flyToToken}
               flyToZoom={15}
-            >
-              {allLocations && (
-                <LocationMarkers
-                  locations={filteredLocations}
-                  selectedId={selected?.id}
-                  onSelect={selectLocation}
-                  currentLocation={geo.status === "granted" ? geo.coordinates : undefined}
-                />
-              )}
-            </MapView>
+              markers={allLocations ? markers : []}
+            />
 
             <div className="pointer-events-none absolute inset-x-3 bottom-3">
               <AnimatePresence>

@@ -1,7 +1,10 @@
-import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import type { Map as LeafletMap } from "leaflet";
-import { TILE_LAYERS, DEFAULT_ZOOM } from "@/config/map";
+import { useEffect, useRef, useState } from "react";
+import * as maplibregl from "maplibre-gl";
+import type { Feature, LineString } from "geojson";
+import { useAppStore } from "@/store/useAppStore";
+import { DEFAULT_ZOOM, ACCENT_HEX, ROUTE_CORE_HEX } from "@/config/map";
+import { buildMapStyle, applyMapTheme } from "@/config/mapStyle";
+import { useMapMarkers, type MapMarkerSpec } from "@/hooks/useMapMarkers";
 import type { Coordinates } from "@/types/location";
 import type { MapBounds } from "@/lib/geo";
 
@@ -13,43 +16,33 @@ interface MapViewProps {
   flyToToken?: number;
   flyTo?: Coordinates;
   flyToZoom?: number;
-  children?: React.ReactNode;
+  markers?: MapMarkerSpec[];
+  /** [lng, lat] pairs of an actual road route to draw with the glow treatment. */
+  route?: [number, number][] | null;
+  /** Recomputes and animates to bounds covering these points (e.g. a route's endpoints). */
+  fitBoundsTo?: Coordinates[];
   className?: string;
   interactive?: boolean;
 }
 
-function toBounds(map: LeafletMap): MapBounds {
-  const b = map.getBounds();
-  return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+const ROUTE_SOURCE_ID = "route";
+const ROUTE_LAYERS = {
+  outerGlow: "route-glow-outer",
+  innerGlow: "route-glow-inner",
+  core: "route-core",
+};
+
+function toBounds(bounds: maplibregl.LngLatBounds): MapBounds {
+  return {
+    north: bounds.getNorth(),
+    south: bounds.getSouth(),
+    east: bounds.getEast(),
+    west: bounds.getWest(),
+  };
 }
 
-function BoundsWatcher({ onBoundsChange }: { onBoundsChange?: (bounds: MapBounds) => void }) {
-  const map = useMapEvents({
-    moveend: () => onBoundsChange?.(toBounds(map)),
-    zoomend: () => onBoundsChange?.(toBounds(map)),
-  });
-
-  useEffect(() => {
-    onBoundsChange?.(toBounds(map));
-    // Only on mount — subsequent updates come from the move/zoom handlers.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return null;
-}
-
-function FlyToController({ target, zoom, token }: { target?: Coordinates; zoom?: number; token?: number }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!target) return;
-    map.flyTo([target.latitude, target.longitude], zoom ?? map.getZoom(), {
-      duration: 1.1,
-      easeLinearity: 0.25,
-    });
-    // Re-run whenever the caller bumps the token, even for the same coordinates.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-  return null;
+function emptyGeoJSON(): Feature<LineString> {
+  return { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } };
 }
 
 export function MapView({
@@ -59,31 +52,179 @@ export function MapView({
   flyToToken,
   flyTo,
   flyToZoom,
-  children,
+  markers,
+  route,
+  fitBoundsTo,
   className,
   interactive = true,
 }: MapViewProps) {
-  const mapRef = useRef<LeafletMap | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const [map, setMap] = useState<maplibregl.Map | null>(null);
+  const theme = useAppStore((s) => s.theme);
+
+  // Callbacks change identity every render; keep the live one in a ref so
+  // the map-init effect below can stay mount-only.
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  onBoundsChangeRef.current = onBoundsChange;
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const instance = new maplibregl.Map({
+      container: containerRef.current,
+      style: buildMapStyle(useAppStore.getState().theme === "dark" ? "dark" : "light"),
+      center: [center.longitude, center.latitude],
+      zoom,
+      attributionControl: false,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
+      dragPan: interactive,
+      scrollZoom: interactive,
+      touchZoomRotate: interactive,
+      doubleClickZoom: interactive,
+      keyboard: interactive,
+    });
+    instance.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    instance.touchZoomRotate.disableRotation();
+
+    const handleMoveEnd = () => onBoundsChangeRef.current?.(toBounds(instance.getBounds()));
+    instance.on("moveend", handleMoveEnd);
+    instance.on("load", () => {
+      handleMoveEnd();
+      setMap(instance);
+    });
+
+    mapRef.current = instance;
+    return () => {
+      instance.remove();
+      mapRef.current = null;
+      setMap(null);
+    };
+    // Intentionally mount-only: center/zoom below are just the initial
+    // camera, and `interactive` doesn't change for a mounted MapView.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Theme: recolor in place rather than rebuilding the style.
+  useEffect(() => {
+    if (!map) return;
+    applyMapTheme(map, theme === "dark" ? "dark" : "light");
+  }, [map, theme]);
+
+  // Imperative pan/zoom on demand (pin tap, search select, etc).
+  useEffect(() => {
+    if (!map || !flyTo) return;
+    map.flyTo({ center: [flyTo.longitude, flyTo.latitude], zoom: flyToZoom ?? map.getZoom(), duration: 1100, essential: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, flyToToken]);
+
+  // Fit to a set of points (e.g. a route's endpoints/geometry).
+  useEffect(() => {
+    if (!map || !fitBoundsTo || fitBoundsTo.length === 0) return;
+    const bounds = fitBoundsTo.reduce(
+      (acc, c) => acc.extend([c.longitude, c.latitude]),
+      new maplibregl.LngLatBounds([fitBoundsTo[0].longitude, fitBoundsTo[0].latitude], [fitBoundsTo[0].longitude, fitBoundsTo[0].latitude]),
+    );
+    map.fitBounds(bounds, { padding: 56, maxZoom: 15, duration: 900 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, JSON.stringify(fitBoundsTo)]);
+
+  useMapMarkers(map, markers ?? []);
+  useRouteLayer(map, route ?? null);
 
   return (
-    <MapContainer
-      ref={mapRef}
-      center={[center.latitude, center.longitude]}
-      zoom={zoom}
-      zoomControl={false}
-      attributionControl={interactive}
-      dragging={interactive}
-      scrollWheelZoom={interactive}
-      touchZoom={interactive}
-      doubleClickZoom={interactive}
-      boxZoom={false}
-      keyboard={interactive}
-      className={className ?? "size-full"}
-    >
-      <TileLayer url={TILE_LAYERS.url} attribution={TILE_LAYERS.attribution} />
-      <BoundsWatcher onBoundsChange={onBoundsChange} />
-      <FlyToController target={flyTo} zoom={flyToZoom} token={flyToToken} />
-      {children}
-    </MapContainer>
+    <div ref={containerRef} className={`map-surface ${className ?? "size-full"}`}>
+      <div className="map-vignette" />
+    </div>
   );
+}
+
+/** Draws the road route (when present) as a three-pass glow — a wide
+ * blurred halo, a tighter mid glow, and a bright core — with a slow
+ * breathing pulse. Respects prefers-reduced-motion by holding a static
+ * (still glowing) line instead of animating. */
+function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | null) {
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+
+    if (!map.getSource(ROUTE_SOURCE_ID)) {
+      map.addSource(ROUTE_SOURCE_ID, { type: "geojson", data: emptyGeoJSON() });
+      map.addLayer({
+        id: ROUTE_LAYERS.outerGlow,
+        type: "line",
+        source: ROUTE_SOURCE_ID,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ACCENT_HEX,
+          "line-width": 16,
+          "line-blur": 14,
+          "line-opacity": 0.22,
+        },
+      });
+      map.addLayer({
+        id: ROUTE_LAYERS.innerGlow,
+        type: "line",
+        source: ROUTE_SOURCE_ID,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ACCENT_HEX,
+          "line-width": 8,
+          "line-blur": 5,
+          "line-opacity": 0.5,
+        },
+      });
+      map.addLayer({
+        id: ROUTE_LAYERS.core,
+        type: "line",
+        source: ROUTE_SOURCE_ID,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ROUTE_CORE_HEX,
+          "line-width": 3,
+          "line-opacity": 0.95,
+        },
+      });
+    }
+
+    const source = map.getSource(ROUTE_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    source?.setData(
+      route
+        ? { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: route } }
+        : emptyGeoJSON(),
+    );
+
+    const visibility = route ? "visible" : "none";
+    for (const id of Object.values(ROUTE_LAYERS)) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visibility);
+    }
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!route || reduceMotion) return;
+
+    const start = performance.now();
+    let lastPaint = 0;
+    const tick = (now: number) => {
+      if (now - lastPaint > 60) {
+        lastPaint = now;
+        const t = (now - start) / 1000;
+        const pulse = (Math.sin(t * 1.4) + 1) / 2; // 0..1
+        if (map.getLayer(ROUTE_LAYERS.outerGlow)) {
+          map.setPaintProperty(ROUTE_LAYERS.outerGlow, "line-width", 14 + pulse * 6);
+          map.setPaintProperty(ROUTE_LAYERS.outerGlow, "line-opacity", 0.16 + pulse * 0.14);
+        }
+        if (map.getLayer(ROUTE_LAYERS.innerGlow)) {
+          map.setPaintProperty(ROUTE_LAYERS.innerGlow, "line-opacity", 0.4 + pulse * 0.25);
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [map, route]);
 }

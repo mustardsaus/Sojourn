@@ -74,8 +74,13 @@ function PlacePageContent({ location, allLocations }: { location: Location; allL
           savedLocations={allLocations}
         />
 
-        <div className="relative h-[230px] w-full overflow-hidden rounded-[14px] shadow-card">
-          <RouteMap origin={route.origin} originCoordinates={route.originCoordinates} destination={location} />
+        <div className="relative h-[230px] w-full overflow-hidden rounded-[14px]">
+          <RouteMap
+            origin={route.origin}
+            originCoordinates={route.originCoordinates}
+            destination={location}
+            route={route.routeGeometry}
+          />
 
           <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-center justify-between gap-2">
             <div className="pointer-events-auto rounded-full bg-scrim px-3 py-1.5 font-display text-xs text-text backdrop-blur-sm">

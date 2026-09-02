@@ -30,7 +30,7 @@ export function CategoryFilter({ value, onChange, className }: CategoryFilterPro
             aria-selected={active}
             onClick={() => onChange(option.value)}
             className={clsx(
-              "relative shrink-0 rounded-[10px] border px-4 py-[7px] font-display text-xs transition-colors duration-200",
+              "relative shrink-0 rounded-[10px] border px-4 py-[7px] font-display text-xs leading-5 transition-colors duration-200",
               active
                 ? "border-accent-soft text-white"
                 : "border-pill-border bg-pill text-text hover:border-text-faint",

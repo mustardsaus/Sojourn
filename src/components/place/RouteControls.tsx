@@ -18,7 +18,7 @@ export function RouteControls({ origin, onOriginChange, destination, savedLocati
     <div className="flex flex-col gap-3">
       <div className="relative">
         <button onClick={() => setPickerOpen((v) => !v)} className="flex w-full flex-col gap-1 text-left">
-          <span className="font-body text-[8px] uppercase tracking-wide text-text-faint">From</span>
+          <span className="font-body text-[8px] text-text-faint">From</span>
           <span className="flex items-center justify-between font-display text-xs text-text">
             <span className="truncate">{originLabel}</span>
             <ChevronIcon open={pickerOpen} />
@@ -64,7 +64,7 @@ export function RouteControls({ origin, onOriginChange, destination, savedLocati
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="font-body text-[8px] uppercase tracking-wide text-text-faint">To</span>
+        <span className="font-body text-[8px] text-text-faint">To</span>
         <span className="truncate font-display text-xs text-text">{destination.name}</span>
         <div className="mt-[7px] h-px w-full bg-line" />
       </div>

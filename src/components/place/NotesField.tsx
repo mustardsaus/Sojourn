@@ -26,7 +26,7 @@ export function NotesField({ location }: NotesFieldProps) {
     if (!notes.youJustGotta) return null;
     return (
       <Section label={config.notesField.label}>
-        <p className="font-script text-lg leading-snug text-eat">{notes.youJustGotta}</p>
+        <p className="font-script text-[12px] leading-normal text-eat">{notes.youJustGotta}</p>
       </Section>
     );
   }

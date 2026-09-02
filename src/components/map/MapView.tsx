@@ -11,8 +11,8 @@ import * as maplibregl from "maplibre-gl";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { Feature, LineString } from "geojson";
 import { useAppStore } from "@/store/useAppStore";
-import { DEFAULT_ZOOM, ACCENT_HEX, ROUTE_CORE_HEX } from "@/config/map";
-import { buildMapStyle, applyMapTheme } from "@/config/mapStyle";
+import { DEFAULT_ZOOM } from "@/config/map";
+import { buildMapStyle, applyMapTheme, applyRouteTheme, ROUTE_HEX, type MapThemeName } from "@/config/mapStyle";
 import { useMapMarkers, type MapMarkerSpec } from "@/hooks/useMapMarkers";
 import type { Coordinates } from "@/types/location";
 import type { MapBounds } from "@/lib/geo";
@@ -120,8 +120,12 @@ export function MapView({
   // Theme: recolor in place rather than rebuilding the style.
   useEffect(() => {
     if (!map) return;
-    applyMapTheme(map, theme === "dark" ? "dark" : "light");
+    const resolved = theme === "dark" ? "dark" : "light";
+    applyMapTheme(map, resolved);
+    applyRouteTheme(map, resolved, Object.values(ROUTE_LAYERS));
   }, [map, theme]);
+
+  useAmbientDrift(map);
 
   // Imperative pan/zoom on demand (pin tap, search select, etc).
   useEffect(() => {
@@ -142,7 +146,7 @@ export function MapView({
   }, [map, JSON.stringify(fitBoundsTo)]);
 
   useMapMarkers(map, markers ?? []);
-  useRouteLayer(map, route ?? null);
+  useRouteLayer(map, route ?? null, theme === "dark" ? "dark" : "light");
 
   return (
     <div ref={containerRef} className={`map-surface ${className ?? "size-full"}`}>
@@ -154,14 +158,17 @@ export function MapView({
 /** Draws the road route (when present) as a three-pass glow — a wide
  * blurred halo, a tighter mid glow, and a bright core — with a slow
  * breathing pulse. Respects prefers-reduced-motion by holding a static
- * (still glowing) line instead of animating. */
-function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | null) {
+ * (still glowing) line instead of animating. Colored per theme (strong
+ * near-black in day mode, strong white in dark mode) — never green — so
+ * it's the clear standout element against the much softer road network. */
+function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | null, theme: MapThemeName) {
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!map) return;
 
     if (!map.getSource(ROUTE_SOURCE_ID)) {
+      const routeHex = ROUTE_HEX[theme];
       map.addSource(ROUTE_SOURCE_ID, { type: "geojson", data: emptyGeoJSON() });
       map.addLayer({
         id: ROUTE_LAYERS.outerGlow,
@@ -169,7 +176,7 @@ function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | n
         source: ROUTE_SOURCE_ID,
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": ACCENT_HEX,
+          "line-color": routeHex,
           "line-width": 16,
           "line-blur": 14,
           "line-opacity": 0.22,
@@ -181,7 +188,7 @@ function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | n
         source: ROUTE_SOURCE_ID,
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": ACCENT_HEX,
+          "line-color": routeHex,
           "line-width": 8,
           "line-blur": 5,
           "line-opacity": 0.5,
@@ -193,7 +200,7 @@ function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | n
         source: ROUTE_SOURCE_ID,
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": ROUTE_CORE_HEX,
+          "line-color": routeHex,
           "line-width": 3,
           "line-opacity": 0.95,
         },
@@ -237,5 +244,56 @@ function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | n
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
+    // `theme` intentionally excluded: it only seeds color at first layer
+    // creation — later theme changes are handled by `applyRouteTheme`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, route]);
+}
+
+/** A very subtle, cinematic idle sway of the map's bearing around its own
+ * center — alive but never disorienting — that starts as soon as the map
+ * is ready and stops for good at the first sign of user interaction.
+ * Skipped entirely under prefers-reduced-motion. */
+function useAmbientDrift(map: maplibregl.Map | null) {
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let active = true;
+    const stop = () => {
+      if (!active) return;
+      active = false;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+
+    const interactionEvents = [
+      "dragstart",
+      "zoomstart",
+      "rotatestart",
+      "pitchstart",
+      "wheel",
+      "touchstart",
+      "mousedown",
+    ] as const;
+    interactionEvents.forEach((event) => map.on(event, stop));
+
+    const start = performance.now();
+    const PERIOD_SECONDS = 18;
+    const AMPLITUDE_DEGREES = 3;
+    const tick = (now: number) => {
+      if (!active) return;
+      const t = (now - start) / 1000;
+      map.setBearing(Math.sin((t / PERIOD_SECONDS) * Math.PI * 2) * AMPLITUDE_DEGREES);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      active = false;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      interactionEvents.forEach((event) => map.off(event, stop));
+    };
+  }, [map]);
 }

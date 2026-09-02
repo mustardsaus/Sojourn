@@ -23,18 +23,32 @@ interface RoadPalette {
 }
 
 export const ROAD_PALETTES: Record<MapThemeName, RoadPalette> = {
+  // Background is the exact same white as the page (--color-bg) — the map
+  // has no visual boundary of its own, just roads drawn onto the page.
   light: {
     background: "#ffffff",
-    major: "#1c1c1c",
-    secondary: "#4a4a4a",
-    minor: "#a8a8a8",
+    major: "#5c5c5c",
+    secondary: "#8a8a8a",
+    minor: "#c9c9c9",
   },
+  // Kept dim and muted rather than near-white, so the network reads as
+  // atmospheric illumination rather than high-contrast lines.
   dark: {
     background: "#141414",
-    major: "#f2f2f0",
-    secondary: "#b8b8bd",
-    minor: "#57575e",
+    major: "#a3a3a6",
+    secondary: "#7d7d82",
+    minor: "#4c4c52",
   },
+};
+
+/** The selected route's color, per theme — a strong monochrome accent
+ * (never green) so it reads as the clear standout element against the
+ * much softer road network. The same hex is used for every glow layer,
+ * varied only by width/opacity/blur, since a black or white "glow" is
+ * really just intensity, not a tint. */
+export const ROUTE_HEX: Record<MapThemeName, string> = {
+  light: "#121212",
+  dark: "#ffffff",
 };
 
 const MAJOR_CLASSES = ["motorway", "trunk"];
@@ -76,8 +90,8 @@ export function buildMapStyle(theme: MapThemeName): StyleSpecification {
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": palette.minor,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.3, 15, 1, 18, 2.4],
-          "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.4, 14, 0.85],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.2, 15, 0.7, 18, 1.6],
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.5, 14, 0.9],
         },
       },
       {
@@ -89,7 +103,7 @@ export function buildMapStyle(theme: MapThemeName): StyleSpecification {
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": palette.secondary,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 13, 1.6, 18, 4],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.3, 13, 1.0, 18, 2.6],
         },
       },
       {
@@ -101,7 +115,7 @@ export function buildMapStyle(theme: MapThemeName): StyleSpecification {
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": palette.major,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.8, 12, 2.2, 18, 5.5],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.4, 12, 1.4, 18, 3.4],
         },
       },
     ],
@@ -117,4 +131,13 @@ export function applyMapTheme(map: import("maplibre-gl").Map, theme: MapThemeNam
   map.setPaintProperty(ROAD_LAYER_IDS.minor, "line-color", palette.minor);
   map.setPaintProperty(ROAD_LAYER_IDS.secondary, "line-color", palette.secondary);
   map.setPaintProperty(ROAD_LAYER_IDS.major, "line-color", palette.major);
+}
+
+/** Recolors the route glow/core layers (added lazily by `useRouteLayer` in
+ * MapView) to match the theme. A no-op if no route layer exists yet. */
+export function applyRouteTheme(map: import("maplibre-gl").Map, theme: MapThemeName, layerIds: string[]) {
+  const hex = ROUTE_HEX[theme];
+  for (const id of layerIds) {
+    if (map.getLayer(id)) map.setPaintProperty(id, "line-color", hex);
+  }
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import clsx from "clsx";
 import { getCategoryColor, getCategoryConfig, getSecondLevelLabel } from "@/config/categories";
 import { AdiScoreStars } from "@/components/common/AdiScore";
 import { ThreeDViewer } from "@/components/three/ThreeDViewer";
@@ -8,9 +9,13 @@ import type { Location } from "@/types/location";
 
 interface PlaceDetailCardProps {
   location: Location;
+  /** Skip the colored name/category/rating banner — used inside the Place
+   * Page's bottom sheet, where that same information already lives in the
+   * sheet's always-visible peek header. */
+  hideHeader?: boolean;
 }
 
-export function PlaceDetailCard({ location }: PlaceDetailCardProps) {
+export function PlaceDetailCard({ location, hideHeader }: PlaceDetailCardProps) {
   const [show3D, setShow3D] = useState(false);
   const color = getCategoryColor(location.topLevelCategory);
   const categoryLabel = getCategoryConfig(location.topLevelCategory).label;
@@ -18,18 +23,25 @@ export function PlaceDetailCard({ location }: PlaceDetailCardProps) {
   const has3D = location.threeDAsset.kind !== "none";
 
   return (
-    <article className="flex flex-col gap-[18px] overflow-hidden rounded-[10px] bg-surface pb-5 shadow-card">
-      <header className="flex flex-col gap-1 rounded-t-[8px] px-5 py-[10px]" style={{ backgroundColor: color }}>
-        <h2 className="font-display text-[22px] text-white">{location.name}</h2>
-        <div className="flex items-center gap-2 text-sm text-white/90">
-          <span className="font-accent">
-            {categoryLabel} | {secondLabel}
-          </span>
-          <AdiScoreStars score={location.adiScore} />
-        </div>
-      </header>
+    <article
+      className={clsx(
+        "flex flex-col gap-[18px] overflow-hidden pb-5",
+        hideHeader ? "" : "rounded-[10px] bg-surface shadow-card",
+      )}
+    >
+      {!hideHeader && (
+        <header className="flex flex-col gap-1 rounded-t-[8px] px-5 py-[10px]" style={{ backgroundColor: color }}>
+          <h2 className="font-display text-[22px] text-white">{location.name}</h2>
+          <div className="flex items-center gap-2 text-sm text-white/90">
+            <span className="font-accent">
+              {categoryLabel} | {secondLabel}
+            </span>
+            <AdiScoreStars score={location.adiScore} />
+          </div>
+        </header>
+      )}
 
-      <div className="relative h-[190px] w-full px-0">
+      <div className={clsx("relative h-[190px] w-full", hideHeader && "mt-[2px] overflow-hidden rounded-[10px]")}>
         {has3D && (
           <button
             onClick={() => setShow3D((v) => !v)}

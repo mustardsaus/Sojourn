@@ -1,4 +1,5 @@
 import { useState } from "react";
+import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
@@ -6,17 +7,26 @@ import { ThemeToggle } from "./ThemeToggle";
 interface HeaderProps {
   titleBeforeAccent: string;
   className?: string;
+  /** False once something else (the Place Page's fully-expanded drawer)
+   * visually covers the header — keeps its "Maps" menu and theme toggle
+   * from staying invisibly clickable underneath whatever's now on top. */
+  interactive?: boolean;
 }
 
 /** Shared top bar for both the dashboard and the Place Page: the "Maps"
  * breadcrumb/menu, the big two-tone heading, and the day/night control. */
-export function Header({ titleBeforeAccent, className }: HeaderProps) {
+export function Header({ titleBeforeAccent, className, interactive = true }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
-    <header className={className}>
-      <div className="flex items-center justify-between">
+    // `pointer-events-none` on the header itself, re-enabled only on the
+    // interactive nav row below: on the Place Page this floats over a
+    // full-screen map and bottom sheet, and the plain heading text below
+    // has no click handler of its own — it shouldn't block drags/taps on
+    // whatever sits beneath it just because it occupies that space.
+    <header className={clsx(className, "pointer-events-none")}>
+      <div className={clsx(interactive ? "pointer-events-auto" : "pointer-events-none", "flex items-center justify-between")}>
         <div className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}

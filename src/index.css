@@ -16,17 +16,17 @@
   --color-see: #7367fe;
   --color-do: #c9891f;
 
-  --color-bg: #d9d9d6;
-  --color-bg-elevated: #e6e6e3;
-  --color-surface: #c3c3c0;
-  --color-surface-row: #b6b6b2;
-  --color-pill: rgba(117, 117, 117, 0.55);
-  --color-pill-border: #8c8c8c;
+  --color-bg: #ffffff;
+  --color-bg-elevated: #f7f7f5;
+  --color-surface: #efefec;
+  --color-surface-row: #e4e4e0;
+  --color-pill: rgba(117, 117, 117, 0.4);
+  --color-pill-border: #b9b9b6;
   --color-text: #262626;
   --color-text-soft: #595959;
   --color-text-faint: #807d7d;
-  --color-line: rgba(38, 38, 38, 0.18);
-  --color-scrim: rgba(217, 217, 214, 0.55);
+  --color-line: rgba(38, 38, 38, 0.12);
+  --color-scrim: rgba(255, 255, 255, 0.6);
 
   --shadow-card: 0 12px 32px -12px rgba(20, 20, 20, 0.28);
   --shadow-pin: 0 6px 16px -4px rgba(20, 20, 20, 0.45);

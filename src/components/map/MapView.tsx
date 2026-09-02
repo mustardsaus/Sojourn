@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import type { Map as LeafletMap } from "leaflet";
-import { useAppStore } from "@/store/useAppStore";
 import { TILE_LAYERS, DEFAULT_ZOOM } from "@/config/map";
 import type { Coordinates } from "@/types/location";
 import type { MapBounds } from "@/lib/geo";
@@ -64,8 +63,6 @@ export function MapView({
   className,
   interactive = true,
 }: MapViewProps) {
-  const theme = useAppStore((s) => s.theme);
-  const tiles = theme === "dark" ? TILE_LAYERS.dark : TILE_LAYERS.light;
   const mapRef = useRef<LeafletMap | null>(null);
 
   return (
@@ -83,8 +80,7 @@ export function MapView({
       keyboard={interactive}
       className={className ?? "size-full"}
     >
-      <TileLayer url={tiles.url} attribution={tiles.attribution} />
-      <TileLayer url={tiles.labelsUrl} />
+      <TileLayer url={TILE_LAYERS.url} attribution={TILE_LAYERS.attribution} />
       <BoundsWatcher onBoundsChange={onBoundsChange} />
       <FlyToController target={flyTo} zoom={flyToZoom} token={flyToToken} />
       {children}

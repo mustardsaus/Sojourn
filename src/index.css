@@ -142,8 +142,12 @@ body {
 .leaflet-pane {
   filter: none;
 }
+/* Standard OSM tiles only ship a light style — night mode is produced by
+   filtering the tile pane rather than depending on a second (often
+   key-gated) tile provider. Invert + hue-rotate is the well-worn recipe
+   for turning a light basemap into a passable dark one in pure CSS. */
 :root[data-theme="dark"] .leaflet-tile-pane {
-  filter: brightness(0.92) contrast(1.05);
+  filter: invert(1) hue-rotate(180deg) brightness(0.94) contrast(0.9) saturate(0.7);
 }
 
 /* Map pins */

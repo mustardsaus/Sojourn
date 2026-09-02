@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 // MapLibre resolves its worker script relative to its own module URL at
 // runtime, which breaks once Vite inlines it into our bundle (the request
-// ends up pointed at a file that was never emitted). Importing the worker
-// with Vite's `?url` suffix makes Vite emit it as its own asset and hand
-// back the correct built URL, which we then register explicitly.
-import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
+// ends up pointed at a file that was never emitted). `?worker&url` tells
+// Vite to actually bundle the file as a worker entry point (resolving and
+// inlining its own internal imports, e.g. the shared chunk it splits off
+// by default) and hand back the URL of that self-contained output —
+// plain `?url` just copies the raw file, which left its `import` of
+// maplibre-gl-shared.mjs dangling since that chunk was never emitted.
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { Feature, LineString } from "geojson";
 import { useAppStore } from "@/store/useAppStore";
 import { DEFAULT_ZOOM, ACCENT_HEX, ROUTE_CORE_HEX } from "@/config/map";

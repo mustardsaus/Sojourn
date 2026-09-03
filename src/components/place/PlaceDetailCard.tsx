@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { getCategoryColor, getCategoryConfig, getSecondLevelLabel } from "@/config/categories";
 import { AdiScoreStars } from "@/components/common/AdiScore";
 import { ThreeDViewer } from "@/components/three/ThreeDViewer";
+import { MediaGallery } from "./MediaGallery";
 import { NotesField } from "./NotesField";
 import { ItinerariesSection } from "./ItinerariesSection";
 import type { Location } from "@/types/location";
@@ -59,7 +60,7 @@ export function PlaceDetailCard({ location, hideHeader }: PlaceDetailCardProps) 
         {show3D && has3D ? (
           <ThreeDViewer asset={location.threeDAsset} seed={location.id} className="size-full" />
         ) : (
-          <img src={location.image} alt={location.name} className="size-full object-cover" />
+          <MediaGallery images={location.images} name={location.name} className="size-full" />
         )}
       </div>
 

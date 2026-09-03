@@ -70,10 +70,13 @@ export function Header({ titleBeforeAccent, className, interactive = true }: Hea
                   Itineraries · soon
                 </button>
                 <button
-                  disabled
-                  className="w-full cursor-not-allowed rounded-lg px-3 py-2 text-left font-body text-xs text-text-faint"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigate("/contribute");
+                  }}
+                  className="w-full rounded-lg px-3 py-2 text-left font-body text-xs text-text hover:bg-pill"
                 >
-                  Contribute · soon
+                  Contribute
                 </button>
               </motion.div>
             )}

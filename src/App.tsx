@@ -9,7 +9,7 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 // viewer (three.js + drei), which is meaningfully heavy — no reason to
 // ship it before someone actually opens a place.
 const PlacePage = lazy(() => import("@/pages/PlacePage").then((m) => ({ default: m.PlacePage })));
-const ContributeStub = lazy(() => import("@/pages/ContributeStub").then((m) => ({ default: m.ContributeStub })));
+const Contribute = lazy(() => import("@/pages/Contribute").then((m) => ({ default: m.Contribute })));
 
 function RouteFallback() {
   return (
@@ -27,7 +27,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/place/:id" element={<PlacePage />} />
-        <Route path="/contribute" element={<ContributeStub />} />
+        <Route path="/contribute" element={<Contribute />} />
         <Route path="*" element={<Dashboard />} />
       </Routes>
     </Suspense>

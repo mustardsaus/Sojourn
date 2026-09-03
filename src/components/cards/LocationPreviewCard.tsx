@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { getCategoryColor, getCategoryConfig } from "@/config/categories";
 import { AdiScore } from "@/components/common/AdiScore";
+import { getThumbnailUrl } from "@/lib/media";
 import type { Location } from "@/types/location";
 
 interface LocationPreviewCardProps {
@@ -23,7 +24,7 @@ export function LocationPreviewCard({ location, onGo, onDismiss }: LocationPrevi
       className="pointer-events-auto flex items-center gap-3 rounded-2xl bg-surface p-2.5 pr-3 shadow-card backdrop-blur-md"
     >
       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">
-        <img src={location.image} alt="" className="size-full object-cover" />
+        <img src={getThumbnailUrl(location)} alt="" className="size-full object-cover" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="truncate font-display text-base text-text">{location.name}</p>

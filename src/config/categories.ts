@@ -101,7 +101,7 @@ export const categoryConfig: Record<TopLevelCategory, TopLevelCategoryConfig> = 
     secondLevelCategories: toDoSecondLevel,
     notesField: {
       type: "text",
-      label: "What is it?",
+      label: "What Is It?",
       placeholder: "Describe the activity.",
     },
     emptyNotes: () => ({ kind: "to-do", whatIsIt: "" }),

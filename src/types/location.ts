@@ -72,6 +72,19 @@ export interface Coordinates {
   longitude: number;
 }
 
+/** A single uploaded photo. `isThumbnail` marks the one used everywhere a
+ * location needs a compact visual (dashboard cards, search results, map
+ * previews) — exactly one image should carry it. `order` controls both the
+ * Place Page carousel order and which image earns the thumbnail: the
+ * Contribute form always derives `isThumbnail` from "first in `order`"
+ * rather than exposing it as a separate manual toggle. */
+export interface LocationImage {
+  id: string;
+  url: string;
+  isThumbnail: boolean;
+  order: number;
+}
+
 export interface Location {
   id: string;
   name: string;
@@ -79,7 +92,10 @@ export interface Location {
   googleMapsUrl: string;
   topLevelCategory: TopLevelCategory;
   secondLevelCategory: SecondLevelCategory;
-  image: string;
+  /** 1-3 photos, always in display order. See `getThumbnailUrl` in
+   * `src/lib/media.ts` for the one place that derives "the" image out of
+   * this list — nothing else should reach for `images[0]` directly. */
+  images: LocationImage[];
   threeDAsset: ThreeDAsset;
   /** Personal 5-star rating, in half-point increments. */
   adiScore: number;

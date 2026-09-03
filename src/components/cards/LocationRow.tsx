@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { getCategoryColor, getCategoryConfig, getSecondLevelLabel } from "@/config/categories";
 import { AdiScore } from "@/components/common/AdiScore";
+import { getThumbnailUrl } from "@/lib/media";
 import type { Location } from "@/types/location";
 
 interface LocationRowProps {
@@ -25,7 +26,7 @@ export function LocationRow({ location, onSelect, layoutId }: LocationRowProps) 
       className="group flex w-full shrink-0 items-center gap-4 rounded-2xl bg-surface-row p-2.5 pr-5 text-left shadow-[0_-4px_2px_rgba(0,0,0,0.05)]"
     >
       <div className="relative h-[116px] w-[124px] shrink-0 overflow-hidden rounded-xl">
-        <img src={location.image} alt="" loading="lazy" className="size-full object-cover" />
+        <img src={getThumbnailUrl(location)} alt="" loading="lazy" className="size-full object-cover" />
         <span
           className="absolute bottom-2 left-2 rounded-full px-2 py-0.5 font-accent text-[10px] font-medium text-white"
           style={{ backgroundColor: color }}

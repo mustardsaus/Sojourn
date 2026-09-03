@@ -19,6 +19,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { useLocationSearch } from "@/hooks/useLocationSearch";
 import { locationRepository } from "@/data/repository";
 import { filterByBounds, type MapBounds } from "@/lib/geo";
+import { getThumbnailUrl } from "@/lib/media";
 import type { Location } from "@/types/location";
 import { hasIntroPlayed, markIntroPlayed } from "@/lib/introFlag";
 import {
@@ -269,7 +270,7 @@ function ViewportPreviewStrip({ locations, onSelect }: { locations: Location[]; 
           onTouchStart={(event) => event.stopPropagation()}
           className="flex shrink-0 items-center gap-2 rounded-full bg-surface-row py-1.5 pl-1.5 pr-3.5"
         >
-          <img src={location.image} alt="" loading="lazy" className="size-8 shrink-0 rounded-full object-cover" />
+          <img src={getThumbnailUrl(location)} alt="" loading="lazy" className="size-8 shrink-0 rounded-full object-cover" />
           <span className="max-w-[104px] truncate font-body text-xs text-text">{location.name}</span>
         </button>
       ))}

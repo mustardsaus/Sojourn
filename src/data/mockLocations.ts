@@ -1,9 +1,22 @@
-import type { Location } from "@/types/location";
+import type { Location, LocationImage } from "@/types/location";
 
 const now = "2026-06-01T00:00:00.000Z";
 
 function img(seed: string) {
   return `https://picsum.photos/seed/${seed}/800/600`;
+}
+
+/** Every mock location currently ships exactly one photo — `images` is
+ * still a real array (not a shortcut singular field) so the Contribute
+ * form's 1-3 photo model and the Place Page's carousel work unchanged the
+ * day a location actually has two or three. */
+function images(...seeds: string[]): LocationImage[] {
+  return seeds.map((seed, index) => ({
+    id: `${seed}-img`,
+    url: img(seed),
+    isThumbnail: index === 0,
+    order: index,
+  }));
 }
 
 function mapsUrl(query: string) {
@@ -22,7 +35,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Basaveshwara Khanavali Bangalore"),
     topLevelCategory: "to-eat",
     secondLevelCategory: "dhabas",
-    image: img("khanavali"),
+    images: images("khanavali"),
     threeDAsset: { kind: "object", format: "splat", source: "" },
     adiScore: 4.5,
     notes: { kind: "to-eat", youJustGotta: "Bacon Wrapped Prawn, Mai Tai, Dynamite Shrimp" },
@@ -37,7 +50,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Toit Brewpub Indiranagar"),
     topLevelCategory: "to-eat",
     secondLevelCategory: "brewpubs",
-    image: img("toit"),
+    images: images("toit"),
     threeDAsset: { kind: "none" },
     adiScore: 4,
     notes: { kind: "to-eat", youJustGotta: "The Weissbeer flight and the Peri Peri Chicken Pizza." },
@@ -52,7 +65,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Meghana Foods Rajajinagar"),
     topLevelCategory: "to-eat",
     secondLevelCategory: "kebabs-biryani",
-    image: img("meghana"),
+    images: images("meghana"),
     threeDAsset: { kind: "none" },
     adiScore: 4.5,
     notes: { kind: "to-eat", youJustGotta: "Boneless Chicken Biryani, obviously. Order the raita too." },
@@ -66,7 +79,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Vidyarthi Bhavan Basavanagudi"),
     topLevelCategory: "to-eat",
     secondLevelCategory: "dosa",
-    image: img("vidyarthi"),
+    images: images("vidyarthi"),
     threeDAsset: { kind: "object", format: "splat", source: "" },
     adiScore: 5,
     notes: { kind: "to-eat", youJustGotta: "The benne masala dosa. Get there before 10am or queue." },
@@ -81,7 +94,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Truffles Koramangala"),
     topLevelCategory: "to-eat",
     secondLevelCategory: "burgers",
-    image: img("truffles"),
+    images: images("truffles"),
     threeDAsset: { kind: "none" },
     adiScore: 4,
     notes: { kind: "to-eat", youJustGotta: "Sizzling brownie to close it out, non-negotiable." },
@@ -95,7 +108,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Corner House Ice Cream Bangalore"),
     topLevelCategory: "to-eat",
     secondLevelCategory: "dessert",
-    image: img("cornerhouse"),
+    images: images("cornerhouse"),
     threeDAsset: { kind: "none" },
     adiScore: 3.5,
     notes: { kind: "to-eat", youJustGotta: "Death by Chocolate. Do not overthink it." },
@@ -109,7 +122,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Church Street Social Bangalore"),
     topLevelCategory: "to-eat",
     secondLevelCategory: "cafes",
-    image: img("csocial"),
+    images: images("csocial"),
     // The one real captured asset in this mock set — everything else above
     // is either "none" or a placeholder-only format with an empty source.
     // Optimized from a 64MB/900k-vertex/4096px-texture source export down
@@ -134,7 +147,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Manchanbele Dam"),
     topLevelCategory: "to-see",
     secondLevelCategory: "lakes",
-    image: img("manchanbele"),
+    images: images("manchanbele"),
     threeDAsset: { kind: "none" },
     adiScore: 4.5,
     notes: { kind: "to-see", bestTime: "sunset" },
@@ -149,7 +162,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Nandi Hills"),
     topLevelCategory: "to-see",
     secondLevelCategory: "natural-wonders",
-    image: img("nandihills"),
+    images: images("nandihills"),
     threeDAsset: { kind: "object", format: "splat", source: "" },
     adiScore: 4.8,
     notes: { kind: "to-see", bestTime: "sunrise" },
@@ -164,7 +177,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Lalbagh Botanical Garden"),
     topLevelCategory: "to-see",
     secondLevelCategory: "natural-wonders",
-    image: img("lalbagh"),
+    images: images("lalbagh"),
     threeDAsset: { kind: "none" },
     adiScore: 4.7,
     notes: { kind: "to-see", bestTime: "midday" },
@@ -178,7 +191,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Bangalore Palace"),
     topLevelCategory: "to-see",
     secondLevelCategory: "architecture",
-    image: img("palace"),
+    images: images("palace"),
     threeDAsset: { kind: "object", format: "other", source: "" },
     adiScore: 4.2,
     notes: { kind: "to-see", bestTime: "midday" },
@@ -193,7 +206,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("National Gallery of Modern Art Bangalore"),
     topLevelCategory: "to-see",
     secondLevelCategory: "art-museums",
-    image: img("ngma"),
+    images: images("ngma"),
     threeDAsset: { kind: "none" },
     adiScore: 4.3,
     notes: { kind: "to-see", bestTime: "any" },
@@ -207,7 +220,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Ulsoor Lake Bangalore"),
     topLevelCategory: "to-see",
     secondLevelCategory: "lakes",
-    image: img("ulsoor"),
+    images: images("ulsoor"),
     threeDAsset: { kind: "none" },
     adiScore: 3.8,
     notes: { kind: "to-see", bestTime: "sunset" },
@@ -221,7 +234,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Nandi Hills trekking point"),
     topLevelCategory: "to-do",
     secondLevelCategory: "physical",
-    image: img("nanditrek"),
+    images: images("nanditrek"),
     threeDAsset: { kind: "none" },
     adiScore: 4.6,
     notes: {
@@ -238,7 +251,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Freedom Park Bangalore"),
     topLevelCategory: "to-do",
     secondLevelCategory: "eh",
-    image: img("freedompark"),
+    images: images("freedompark"),
     threeDAsset: { kind: "none" },
     adiScore: 3,
     notes: { kind: "to-do", whatIsIt: "Converted old central jail, now a walking park and event ground. Fine for a lap." },
@@ -252,7 +265,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Bengaluru Climbers Bouldering Gym"),
     topLevelCategory: "to-do",
     secondLevelCategory: "physical",
-    image: img("climbers"),
+    images: images("climbers"),
     threeDAsset: { kind: "none" },
     adiScore: 4.4,
     notes: { kind: "to-do", whatIsIt: "Solid bouldering gym, good problem-setting rotation, gets crowded after 7pm." },
@@ -266,7 +279,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Cubbon Park Bangalore"),
     topLevelCategory: "to-do",
     secondLevelCategory: "physical",
-    image: img("cubbon"),
+    images: images("cubbon"),
     threeDAsset: { kind: "none" },
     adiScore: 4.1,
     notes: { kind: "to-do", whatIsIt: "Car-free until 9am on the inner loop. Rent a cycle at the gate near the Vidhana Soudha side." },
@@ -280,7 +293,7 @@ export const mockLocations: Location[] = [
     googleMapsUrl: mapsUrl("Escape Bangalore escape room"),
     topLevelCategory: "to-do",
     secondLevelCategory: "eh",
-    image: img("escaperoom"),
+    images: images("escaperoom"),
     threeDAsset: { kind: "none" },
     adiScore: 3.6,
     notes: { kind: "to-do", whatIsIt: "One decent room ('The Vault'), the others are skippable. Book the 8pm slot." },

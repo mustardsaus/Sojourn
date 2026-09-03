@@ -38,7 +38,10 @@ export function AdiScoreStars({ score, className }: { score: number; className?:
   );
 }
 
-function Star({ size, fill = 1 }: { size: number; fill?: number }) {
+/** Exported so the Contribute form's interactive rating input can reuse the
+ * exact same star rendering — same gradient-fill technique, just driven by
+ * click position instead of a fixed score. */
+export function Star({ size, fill = 1 }: { size: number; fill?: number }) {
   const gradId = `star-fill-${size}-${fill}`;
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden className="shrink-0">

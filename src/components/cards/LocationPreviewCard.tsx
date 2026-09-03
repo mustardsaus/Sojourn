@@ -18,8 +18,8 @@ export function LocationPreviewCard({ location, onGo, onDismiss }: LocationPrevi
       layoutId={`pin-card-${location.id}`}
       initial={{ opacity: 0, y: 28, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.97, transition: { duration: 0.16 } }}
-      transition={{ type: "spring", stiffness: 380, damping: 34 }}
+      exit={{ opacity: 0, y: 16, scale: 0.98, transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] } }}
+      transition={{ type: "spring", stiffness: 320, damping: 34 }}
       className="pointer-events-auto flex items-center gap-3 rounded-2xl bg-surface p-2.5 pr-3 shadow-card backdrop-blur-md"
     >
       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">

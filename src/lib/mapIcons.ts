@@ -1,18 +1,17 @@
 import { getCategoryColor } from "@/config/categories";
 import type { TopLevelCategory } from "@/types/location";
 
-// A thin outline pin — stroke only, no fill anywhere (not even the center
-// ring) — so it reads as a quiet location marker rather than a bold,
-// filled map pin competing with the route glow and the map itself for
-// attention.
-function pinSvg(color: string) {
+// A small point of energy rather than a pin: a soft glowing dot with a
+// faint pulsing halo and a short angled tick for a touch of "location
+// marker" character, no filled teardrop shape, no bold outline. Each
+// instance gets its own randomized pulse delay (see createCategoryPinElement)
+// so the whole map doesn't breathe in unison.
+function glowMarkerHtml(color: string) {
   return `
-    <div class="map-pin__inner">
-      <svg width="26" height="34" viewBox="0 0 26 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13 32.5C13 32.5 22.5 20.77 22.5 12.8C22.5 6.83 18.35 2 13 2C7.65 2 3.5 6.83 3.5 12.8C3.5 20.77 13 32.5 13 32.5Z"
-          stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/>
-        <circle cx="13" cy="12.6" r="3.1" stroke="${color}" stroke-width="1.6"/>
-      </svg>
+    <div class="map-glow" style="--marker-color:${color}">
+      <span class="map-glow__ring"></span>
+      <span class="map-glow__tick"></span>
+      <span class="map-glow__dot"></span>
     </div>`;
 }
 
@@ -24,17 +23,27 @@ function resolveColor(cssVar: string): string {
   return value || "#008d2a";
 }
 
-/** Builds a fresh marker DOM element for a category pin. A new element is
- * created per marker instance (MapLibre's Marker owns its element), but
- * the SVG markup itself is identical for a given category. */
+/** Builds a fresh marker DOM element for a category location — a glowing
+ * dot, not a pin. A new element is created per marker instance (MapLibre's
+ * Marker owns its element), and each gets a randomized negative animation
+ * delay so the ambient pulse across the map reads as many independent
+ * points of energy rather than one synchronized blink. */
 export function createCategoryPinElement(category: TopLevelCategory): HTMLDivElement {
   const color = resolveColor(getCategoryColor(category));
   const el = document.createElement("div");
-  el.className = "map-pin";
-  el.innerHTML = pinSvg(color);
-  el.style.width = "26px";
-  el.style.height = "34px";
+  el.className = "map-glow-wrap";
+  el.innerHTML = glowMarkerHtml(color);
+  el.style.width = "18px";
+  el.style.height = "18px";
   el.style.cursor = "pointer";
+  // A negative delay starts the animation partway through its cycle
+  // immediately, rather than every marker beginning in lockstep at 0.
+  const ring = el.querySelector<HTMLElement>(".map-glow__ring");
+  if (ring) {
+    const duration = 3.2 + Math.random() * 1.6;
+    ring.style.animationDuration = `${duration}s`;
+    ring.style.animationDelay = `-${(Math.random() * duration).toFixed(2)}s`;
+  }
   return el;
 }
 
@@ -54,5 +63,6 @@ export function createCurrentLocationElement(): HTMLDivElement {
 export function setMarkerElementActive(el: HTMLElement | null, active: boolean) {
   if (!el) return;
   el.classList.toggle("map-pin--active", active);
+  el.classList.toggle("map-glow-wrap--active", active);
   el.style.zIndex = active ? "1000" : "";
 }

@@ -43,6 +43,11 @@ interface MapViewProps {
   interactive?: boolean;
 }
 
+// A gentle default tilt (out of MapLibre's 0-60 range) — enough to read as
+// a camera angle rather than a flat top-down diagram, subtle enough that
+// the map stays just as easy to scan and navigate.
+const DEFAULT_PITCH = 32;
+
 const ROUTE_SOURCE_ID = "route";
 const ROUTE_LAYERS = {
   outerGlow: "route-glow-outer",
@@ -94,6 +99,12 @@ export function MapView({
       style: buildMapStyle(useAppStore.getState().theme === "dark" ? "dark" : "light"),
       center: [center.longitude, center.latitude],
       zoom,
+      // A fixed, subtle camera tilt — not a straight-down overhead view —
+      // for a bit of depth and cinematic atmosphere. Pitch interaction
+      // stays disabled below (pitchWithRotate/touchPitch: false) so this
+      // is purely a default viewing angle, never something the user can
+      // exaggerate by accident.
+      pitch: DEFAULT_PITCH,
       attributionControl: false,
       dragRotate: false,
       pitchWithRotate: false,
@@ -135,10 +146,18 @@ export function MapView({
 
   useAmbientDrift(map);
 
-  // Imperative pan/zoom on demand (pin tap, search select, etc).
+  // Imperative pan/zoom on demand (pin tap, search select, etc) — a touch
+  // slower than MapLibre's default with an eased-out curve, so the camera
+  // reads as smoothly gliding to its new focus rather than snapping there.
   useEffect(() => {
     if (!map || !flyTo) return;
-    map.flyTo({ center: [flyTo.longitude, flyTo.latitude], zoom: flyToZoom ?? map.getZoom(), duration: 1100, essential: true });
+    map.flyTo({
+      center: [flyTo.longitude, flyTo.latitude],
+      zoom: flyToZoom ?? map.getZoom(),
+      duration: 1400,
+      easing: (t) => 1 - Math.pow(1 - t, 3),
+      essential: true,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, flyToToken]);
 
@@ -174,6 +193,12 @@ export function MapView({
  * it's the clear standout element against the much softer road network. */
 function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | null, theme: MapThemeName) {
   const rafRef = useRef<number | null>(null);
+  // Identifies "this is a genuinely new route", not just a re-render with
+  // the same geometry, so the fade-in below only plays once per route
+  // rather than restarting on every unrelated prop change.
+  const routeKeyRef = useRef<string | null>(null);
+  const appearStartRef = useRef(0);
+  const FADE_IN_MS = 650;
 
   useEffect(() => {
     if (!map) return;
@@ -230,8 +255,26 @@ function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | n
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visibility);
     }
 
+    // A route fading/drawing into view rather than just appearing: track
+    // whether this is a new route (different endpoints/length than last
+    // time) and, if so, restart the fade-in ramp used below.
+    const routeKey = route ? `${route.length}:${route[0]?.[0]},${route[0]?.[1]}-${route[route.length - 1]?.[0]},${route[route.length - 1]?.[1]}` : null;
+    if (routeKey !== routeKeyRef.current) {
+      routeKeyRef.current = routeKey;
+      if (routeKey) appearStartRef.current = performance.now();
+    }
+
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!route || reduceMotion) return;
+    if (!route) return;
+
+    if (reduceMotion) {
+      // No animation at all: show the route immediately at its resting
+      // opacities rather than skipping the fade-in and leaving it invisible.
+      if (map.getLayer(ROUTE_LAYERS.outerGlow)) map.setPaintProperty(ROUTE_LAYERS.outerGlow, "line-opacity", 0.22);
+      if (map.getLayer(ROUTE_LAYERS.innerGlow)) map.setPaintProperty(ROUTE_LAYERS.innerGlow, "line-opacity", 0.5);
+      if (map.getLayer(ROUTE_LAYERS.core)) map.setPaintProperty(ROUTE_LAYERS.core, "line-opacity", 0.95);
+      return;
+    }
 
     const start = performance.now();
     let lastPaint = 0;
@@ -240,12 +283,16 @@ function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | n
         lastPaint = now;
         const t = (now - start) / 1000;
         const pulse = (Math.sin(t * 1.4) + 1) / 2; // 0..1
+        const fadeIn = Math.min(1, (now - appearStartRef.current) / FADE_IN_MS);
         if (map.getLayer(ROUTE_LAYERS.outerGlow)) {
           map.setPaintProperty(ROUTE_LAYERS.outerGlow, "line-width", 14 + pulse * 6);
-          map.setPaintProperty(ROUTE_LAYERS.outerGlow, "line-opacity", 0.16 + pulse * 0.14);
+          map.setPaintProperty(ROUTE_LAYERS.outerGlow, "line-opacity", (0.16 + pulse * 0.14) * fadeIn);
         }
         if (map.getLayer(ROUTE_LAYERS.innerGlow)) {
-          map.setPaintProperty(ROUTE_LAYERS.innerGlow, "line-opacity", 0.4 + pulse * 0.25);
+          map.setPaintProperty(ROUTE_LAYERS.innerGlow, "line-opacity", (0.4 + pulse * 0.25) * fadeIn);
+        }
+        if (map.getLayer(ROUTE_LAYERS.core)) {
+          map.setPaintProperty(ROUTE_LAYERS.core, "line-opacity", 0.95 * fadeIn);
         }
       }
       rafRef.current = requestAnimationFrame(tick);

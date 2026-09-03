@@ -81,7 +81,7 @@ export function Header({ titleBeforeAccent, className, interactive = true }: Hea
         </div>
         <ThemeToggle />
       </div>
-      <h1 className="mt-6 font-display text-[36px] leading-[40px] text-text">
+      <h1 className="mt-2 font-display text-[36px] leading-[40px] text-text">
         <span className="text-text-soft">{titleBeforeAccent}</span> <span className="text-accent">Sojourn</span>
       </h1>
     </header>

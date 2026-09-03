@@ -47,7 +47,9 @@ export function useMapMarkers(map: maplibregl.Map | null, specs: MapMarkerSpec[]
             onClickRef.current.get(spec.id)?.();
           });
         }
-        const marker = new maplibregl.Marker({ element, anchor: spec.kind === "you" ? "center" : "bottom" })
+        // Both marker kinds are small glowing dots centered exactly on
+        // their coordinate now, not teardrops pointing down from a tip.
+        const marker = new maplibregl.Marker({ element, anchor: "center" })
           .setLngLat([spec.coordinates.longitude, spec.coordinates.latitude])
           .addTo(map);
         entry = { marker, element };

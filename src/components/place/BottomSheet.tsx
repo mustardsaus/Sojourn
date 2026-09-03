@@ -97,7 +97,12 @@ export function BottomSheet({ snap, onSnapChange, peek, children, className, onE
   );
 
   const y = useMotionValue(offsets[snap]);
-  const settle = (target: SheetSnap) => animate(y, offsets[target], reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 42 });
+  // Slightly soft (a hair under critical damping at this stiffness) so a
+  // snap carries the faintest touch of momentum into its resting point
+  // instead of arriving dead-stopped — without ever visibly overshooting
+  // or bouncing back.
+  const settle = (target: SheetSnap) =>
+    animate(y, offsets[target], reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 32, mass: 1 });
 
   // "Latest" refs so the window listeners registered at gesture start
   // (which live for the lifetime of that one gesture) always act on

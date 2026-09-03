@@ -32,10 +32,10 @@ export function ViewportLocationCards({ locations, onSelect, isLoading }: Viewpo
             <motion.div
               key={location.id}
               layout
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}
+              transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
             >
               <LocationRow location={location} onSelect={onSelect} />
             </motion.div>

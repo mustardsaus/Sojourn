@@ -180,16 +180,68 @@ body {
 .map-pin {
   cursor: pointer;
 }
-.map-pin__inner {
+
+/* Location markers: small points of energy rather than pins — a soft
+ * glowing dot, a faint expanding pulse ring, and a short angled tick,
+ * all colored per category so they still read as distinct at a glance. */
+.map-glow-wrap {
+  position: relative;
+  cursor: pointer;
+}
+.map-glow {
+  position: relative;
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22));
-  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.28s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.map-glow__dot {
+  position: relative;
+  z-index: 1;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--marker-color);
+  box-shadow:
+    0 0 5px 1.5px color-mix(in srgb, var(--marker-color) 65%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.map-glow__ring {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  border-radius: 999px;
+  background: var(--marker-color);
+  opacity: 0.4;
+  animation-name: pulse-soft;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  /* duration/delay set per-instance in mapIcons.ts so markers don't pulse
+   * in lockstep. */
+}
+.map-glow__tick {
+  position: absolute;
+  bottom: 8%;
+  width: 1.4px;
+  height: 30%;
+  border-radius: 1px;
+  background: var(--marker-color);
+  opacity: 0.55;
+  transform: rotate(22deg);
   transform-origin: bottom center;
 }
-.map-pin--active .map-pin__inner {
-  transform: translateY(-4px) scale(1.28);
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+.map-glow-wrap--active .map-glow {
+  transform: scale(1.35);
+}
+.map-glow-wrap--active .map-glow__dot {
+  box-shadow:
+    0 0 8px 2.5px color-mix(in srgb, var(--marker-color) 80%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.map-glow-wrap--active .map-glow__ring {
+  opacity: 0.55;
 }
 
 .map-pin--you {

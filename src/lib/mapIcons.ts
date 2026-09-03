@@ -1,13 +1,17 @@
 import { getCategoryColor } from "@/config/categories";
 import type { TopLevelCategory } from "@/types/location";
 
+// A thin outline pin — stroke only, no fill anywhere (not even the center
+// ring) — so it reads as a quiet location marker rather than a bold,
+// filled map pin competing with the route glow and the map itself for
+// attention.
 function pinSvg(color: string) {
   return `
     <div class="map-pin__inner">
-      <svg width="34" height="44" viewBox="0 0 34 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17 43C17 43 30.5 27.66 30.5 16.9C30.5 9.23 24.3 3 17 3C9.7 3 3.5 9.23 3.5 16.9C3.5 27.66 17 43 17 43Z"
-          fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1.2"/>
-        <circle cx="17" cy="16.5" r="7" fill="white" fill-opacity="0.92"/>
+      <svg width="26" height="34" viewBox="0 0 26 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 32.5C13 32.5 22.5 20.77 22.5 12.8C22.5 6.83 18.35 2 13 2C7.65 2 3.5 6.83 3.5 12.8C3.5 20.77 13 32.5 13 32.5Z"
+          stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/>
+        <circle cx="13" cy="12.6" r="3.1" stroke="${color}" stroke-width="1.6"/>
       </svg>
     </div>`;
 }
@@ -28,8 +32,8 @@ export function createCategoryPinElement(category: TopLevelCategory): HTMLDivEle
   const el = document.createElement("div");
   el.className = "map-pin";
   el.innerHTML = pinSvg(color);
-  el.style.width = "34px";
-  el.style.height = "44px";
+  el.style.width = "26px";
+  el.style.height = "34px";
   el.style.cursor = "pointer";
   return el;
 }

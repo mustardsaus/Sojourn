@@ -261,13 +261,28 @@ function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | n
   }, [map, route]);
 }
 
-/** A very subtle, cinematic idle sway of the map's bearing around its own
- * center — alive but never disorienting — that starts as soon as the map
- * is ready. The moment the user touches the map, the drift doesn't stop
- * dead (which reads as the map abruptly "noticing" you and feels like a
- * bug); instead its amplitude ramps down over a second or so, so it fades
- * out the way a spinning coin settles rather than being switched off.
- * Skipped entirely under prefers-reduced-motion. */
+/** Tags every camera call this hook makes so its own interaction listener
+ * (below) can tell "the map just moved because I moved it" apart from
+ * "the map just moved because the user touched it." */
+const AMBIENT_EVENT_DATA = { ambientDrift: true };
+
+/** A very subtle, cinematic idle motion that starts as soon as the map is
+ * ready: a slow sway of the bearing around the map's own center, plus a
+ * one-time gentle zoom-in as the map settles into view, like a camera
+ * finding its shot rather than a loading spinner. The moment the user
+ * touches the map, the sway doesn't stop dead (which reads as the map
+ * abruptly "noticing" you); instead its amplitude ramps down over a
+ * second or so, the way a spinning coin settles rather than being
+ * switched off. Skipped entirely under prefers-reduced-motion.
+ *
+ * The bug this fixes: `map.setBearing()` (used below to drive the sway)
+ * internally fires the exact same `rotatestart`/`rotate`/`rotateend`
+ * events a user's own drag-to-rotate gesture would — so a naive
+ * "stop on any rotatestart" listener immediately cancels itself on its
+ * own first frame, every time, before it's ever visible. Passing
+ * `AMBIENT_EVENT_DATA` as this call's `eventData` tags the events it
+ * fires so the listener below can ignore its own motion and only react
+ * to genuine input. */
 function useAmbientDrift(map: maplibregl.Map | null) {
   const rafRef = useRef<number | null>(null);
 
@@ -281,7 +296,8 @@ function useAmbientDrift(map: maplibregl.Map | null) {
     let fadeStart: number | null = null;
     const FADE_SECONDS = 1.1;
 
-    const beginFade = () => {
+    const beginFade = (event?: unknown) => {
+      if ((event as { ambientDrift?: boolean } | undefined)?.ambientDrift) return; // our own camera move, not real input
       if (fadeStart !== null) return;
       fadeStart = performance.now();
     };
@@ -297,9 +313,18 @@ function useAmbientDrift(map: maplibregl.Map | null) {
     ] as const;
     interactionEvents.forEach((event) => map.on(event, beginFade));
 
+    // The map "arriving": ease from slightly zoomed-out to its real zoom
+    // over a couple of seconds, once, on load — the "slow zoom in" half of
+    // the ambient feel. A native `easeTo` rather than a per-frame manual
+    // zoom: cheap (one GL-driven animation, not 60 tile-relayouts/sec) and
+    // automatically cancelled if the user's own gesture takes over.
+    const introZoom = map.getZoom();
+    map.jumpTo({ zoom: introZoom - 0.7 }, AMBIENT_EVENT_DATA);
+    map.easeTo({ zoom: introZoom, duration: 2600, easing: (t) => 1 - Math.pow(1 - t, 3) }, AMBIENT_EVENT_DATA);
+
     const start = performance.now();
-    const PERIOD_SECONDS = 18;
-    const AMPLITUDE_DEGREES = 3;
+    const PERIOD_SECONDS = 16;
+    const AMPLITUDE_DEGREES = 4;
     const tick = (now: number) => {
       if (!active) return;
       let amplitude = AMPLITUDE_DEGREES;
@@ -312,7 +337,7 @@ function useAmbientDrift(map: maplibregl.Map | null) {
         amplitude *= 1 - fadeElapsed / FADE_SECONDS;
       }
       const t = (now - start) / 1000;
-      map.setBearing(Math.sin((t / PERIOD_SECONDS) * Math.PI * 2) * amplitude);
+      map.setBearing(Math.sin((t / PERIOD_SECONDS) * Math.PI * 2) * amplitude, AMBIENT_EVENT_DATA);
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);

@@ -10,27 +10,33 @@ interface HeaderMapScrimProps {
 
 /** The map doesn't stop at some rectangle — it extends the full height of
  * the page, including underneath the header, and gradually disappears
- * into it. This is what does that disappearing: a heavy `backdrop-filter`
- * blur so any roads back there read as faint texture rather than
- * functional map content, plus the page's own background color fading in
- * on top of that blur. Both are wrapped in the same `mask-image` gradient
- * so the blur itself — not just the tint on top of it — tapers smoothly
- * to nothing rather than snapping off at a hard rectangular edge, which
- * is what a plain `backdrop-blur-xl` utility would do on its own. */
+ * into it. A single flat, fully-opaque fill plus a heavy `backdrop-filter`
+ * blur, with one `mask-image` gradient doing all the fading: both the tint
+ * and the blur it sits on top of are just this element's rendered pixels,
+ * so tapering the element's own alpha tapers both together, with no hard
+ * edge anywhere.
+ *
+ * The alpha isn't a single top-to-bottom fade, though — it's a short dip,
+ * then a plateau, then a fade: barely-there at the very top edge (the
+ * status-bar strip above the header, where a faint trace of blurred map
+ * should still read through), ramping up to fully opaque behind the
+ * header title and search bar (where text needs to stay legible over
+ * whatever busy, colorful map content happens to sit underneath it),
+ * then fading back out to nothing so the map below reappears sharp. */
 export function HeaderMapScrim({ opacity, className }: HeaderMapScrimProps) {
   return (
     <motion.div
       style={{
         opacity,
+        background: "var(--color-bg)",
         backdropFilter: "blur(28px)",
         WebkitBackdropFilter: "blur(28px)",
-        maskImage: "linear-gradient(to bottom, black 0%, black 55%, transparent 100%)",
-        WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 55%, transparent 100%)",
+        maskImage:
+          "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.45) 8%, black 26%, black 74%, transparent 100%)",
+        WebkitMaskImage:
+          "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.45) 8%, black 26%, black 74%, transparent 100%)",
       }}
-      className={clsx(
-        "pointer-events-none absolute inset-x-0 top-0 z-10 h-64 bg-gradient-to-b from-bg via-bg/75 to-transparent",
-        className,
-      )}
+      className={clsx("pointer-events-none absolute inset-x-0 top-0 z-10 h-72", className)}
     />
   );
 }

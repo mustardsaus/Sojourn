@@ -41,7 +41,13 @@ export function PlaceDetailCard({ location, hideHeader }: PlaceDetailCardProps) 
         </header>
       )}
 
-      <div className={clsx("relative h-[190px] w-full", hideHeader && "mt-[2px] overflow-hidden rounded-[10px]")}>
+      <div
+        className={clsx(
+          "relative w-full transition-[height] duration-300",
+          show3D && has3D ? "h-[340px]" : "h-[190px]",
+          hideHeader && "mt-[2px] overflow-hidden rounded-[10px]",
+        )}
+      >
         {has3D && (
           <button
             onClick={() => setShow3D((v) => !v)}

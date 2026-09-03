@@ -10,22 +10,22 @@ import type { Variants } from "framer-motion";
  * at all (see the `playIntro` branches in Dashboard/PlacePage), so this
  * has zero effect on ordinary navigation. */
 export const introItemVariants: Variants = {
-  hidden: { opacity: 0, y: 18, filter: "blur(8px)" },
+  hidden: { opacity: 0, y: 24, filter: "blur(10px)" },
   visible: {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
-    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 1.3, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
 export const introItemVariantsDelayed: Variants = {
-  hidden: { opacity: 0, y: 18, filter: "blur(8px)" },
+  hidden: { opacity: 0, y: 24, filter: "blur(10px)" },
   visible: {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
-    transition: { duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 1.3, delay: 0.4, ease: [0.16, 1, 0.3, 1] },
   },
 };
 

@@ -40,10 +40,32 @@ export type LocationNotes =
   | { kind: "to-see"; bestTime: "sunrise" | "sunset" | "midday" | "night" | "any" }
   | { kind: "to-do"; whatIsIt: string };
 
+/** Which loader `ThreeDViewer` should reach for. "glb"/"gltf" are wired up
+ * to a real loader today; "ply" (point clouds), "splat" (Gaussian splats),
+ * and "other" are recognized but currently fall back to the viewer's
+ * generative placeholder — the format is still recorded so a location can
+ * declare its intended asset ahead of a real capture, and so adding a
+ * loader for one of them later is a change to `ThreeDViewer` alone. */
+export type ThreeDAssetFormat = "glb" | "gltf" | "ply" | "splat" | "other";
+
+/** A 3D asset attached to a location. `kind: "none"` means nothing has
+ * been captured for this place yet — the Place Page just shows the photo.
+ * `kind: "object"` carries everything `ThreeDViewer` needs: `format` (so
+ * it can pick a loader), `source` (a URL — typically something under
+ * `public/`), and free-form `metadata` for anything format-specific a
+ * future loader wants (units, orientation, a splat's point count, etc.)
+ * without this type needing to grow again. An empty `source` means "the
+ * intended format is known but nothing's been captured yet" — the viewer
+ * renders its placeholder instead of trying to load nothing. */
 export type ThreeDAsset =
   | { kind: "none" }
-  | { kind: "splat"; url: string; posterUrl?: string }
-  | { kind: "model"; url: string; posterUrl?: string };
+  | {
+      kind: "object";
+      format: ThreeDAssetFormat;
+      source: string;
+      posterUrl?: string;
+      metadata?: Record<string, unknown>;
+    };
 
 export interface Coordinates {
   latitude: number;

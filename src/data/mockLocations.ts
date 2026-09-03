@@ -23,7 +23,7 @@ export const mockLocations: Location[] = [
     topLevelCategory: "to-eat",
     secondLevelCategory: "dhabas",
     image: img("khanavali"),
-    threeDAsset: { kind: "splat", url: "" },
+    threeDAsset: { kind: "object", format: "splat", source: "" },
     adiScore: 4.5,
     notes: { kind: "to-eat", youJustGotta: "Bacon Wrapped Prawn, Mai Tai, Dynamite Shrimp" },
     description: "Banger butter chicken bro — this changed my life fr fr, what a cracked good lunch.",
@@ -67,7 +67,7 @@ export const mockLocations: Location[] = [
     topLevelCategory: "to-eat",
     secondLevelCategory: "dosa",
     image: img("vidyarthi"),
-    threeDAsset: { kind: "splat", url: "" },
+    threeDAsset: { kind: "object", format: "splat", source: "" },
     adiScore: 5,
     notes: { kind: "to-eat", youJustGotta: "The benne masala dosa. Get there before 10am or queue." },
     description: "A Bangalore institution since 1943 — go hungry, go early.",
@@ -110,7 +110,18 @@ export const mockLocations: Location[] = [
     topLevelCategory: "to-eat",
     secondLevelCategory: "cafes",
     image: img("csocial"),
-    threeDAsset: { kind: "none" },
+    // The one real captured asset in this mock set — everything else above
+    // is either "none" or a placeholder-only format with an empty source.
+    // Optimized from a 64MB/900k-vertex/4096px-texture source export down
+    // to ~1.7MB (meshopt-compressed geometry, ~140k vertices, a 1024px
+    // WebP texture) — plenty for how small this renders in the drawer,
+    // and small enough not to be a rude surprise on mobile data.
+    threeDAsset: {
+      kind: "object",
+      format: "glb",
+      source: "/models/evening-neon-market.glb",
+      metadata: { title: "Evening Neon Market" },
+    },
     adiScore: 4,
     notes: { kind: "to-eat", youJustGotta: "Good laptop-friendly corner upstairs, get the cold brew." },
     createdAt: now,
@@ -139,7 +150,7 @@ export const mockLocations: Location[] = [
     topLevelCategory: "to-see",
     secondLevelCategory: "natural-wonders",
     image: img("nandihills"),
-    threeDAsset: { kind: "splat", url: "" },
+    threeDAsset: { kind: "object", format: "splat", source: "" },
     adiScore: 4.8,
     notes: { kind: "to-see", bestTime: "sunrise" },
     description: "Leave the city at 4am, it's worth it. Fort ruins above the cloud line.",
@@ -168,7 +179,7 @@ export const mockLocations: Location[] = [
     topLevelCategory: "to-see",
     secondLevelCategory: "architecture",
     image: img("palace"),
-    threeDAsset: { kind: "model", url: "" },
+    threeDAsset: { kind: "object", format: "other", source: "" },
     adiScore: 4.2,
     notes: { kind: "to-see", bestTime: "midday" },
     description: "Tudor-style oddity in the middle of the city — the woodwork inside is the real draw.",

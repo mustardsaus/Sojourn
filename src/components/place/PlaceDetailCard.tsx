@@ -31,9 +31,9 @@ export function PlaceDetailCard({ location, hideHeader }: PlaceDetailCardProps) 
     >
       {!hideHeader && (
         <header className="flex flex-col gap-1 rounded-t-[8px] px-5 py-[10px]" style={{ backgroundColor: color }}>
-          <h2 className="font-display text-[22px] text-white">{location.name}</h2>
+          <h2 className="font-display text-xl text-white">{location.name}</h2>
           <div className="flex items-center gap-2 text-sm text-white/90">
-            <span className="font-accent">
+            <span className="font-accent text-xs">
               {categoryLabel} | {secondLabel}
             </span>
             <AdiScoreStars score={location.adiScore} />
@@ -58,7 +58,7 @@ export function PlaceDetailCard({ location, hideHeader }: PlaceDetailCardProps) 
       </div>
 
       {location.description && (
-        <p className="px-5 font-body text-xs leading-relaxed text-text-soft">{location.description}</p>
+        <p className="px-5 font-body text-sm leading-relaxed text-text-soft">{location.description}</p>
       )}
 
       <NotesField location={location} />

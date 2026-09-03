@@ -26,7 +26,7 @@ export function NotesField({ location }: NotesFieldProps) {
     if (!notes.youJustGotta) return null;
     return (
       <Section label={config.notesField.label}>
-        <p className="font-script text-[12px] leading-normal text-eat">{notes.youJustGotta}</p>
+        <p className="font-script text-base leading-normal text-eat">{notes.youJustGotta}</p>
       </Section>
     );
   }
@@ -60,7 +60,7 @@ export function NotesField({ location }: NotesFieldProps) {
     if (!notes.whatIsIt) return null;
     return (
       <Section label={config.notesField.label}>
-        <p className="font-body text-xs leading-relaxed text-text-soft">{notes.whatIsIt}</p>
+        <p className="font-body text-sm leading-relaxed text-text-soft">{notes.whatIsIt}</p>
       </Section>
     );
   }

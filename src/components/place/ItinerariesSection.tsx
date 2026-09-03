@@ -33,7 +33,7 @@ export function ItinerariesSection({ locationId }: ItinerariesSectionProps) {
 
       {itineraries?.map((itinerary) => (
         <div key={itinerary.id} className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between font-body text-xs text-text">
+          <div className="flex items-center justify-between font-body text-sm text-text">
             <span className="font-display">{itinerary.title}</span>
             <button className="text-text opacity-80 transition-opacity hover:opacity-100">View</button>
           </div>

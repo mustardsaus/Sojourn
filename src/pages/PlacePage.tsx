@@ -82,7 +82,7 @@ function PlacePageContent({ location, allLocations }: { location: Location; allL
         originCoordinates={route.originCoordinates}
         destination={location}
         route={route.routeGeometry}
-        className="absolute inset-0"
+        overlay
       />
 
       {/* A soft top scrim keeps the floating header legible over whatever
@@ -105,7 +105,7 @@ function PlacePageContent({ location, allLocations }: { location: Location; allL
         peek={
           <div className="flex items-start justify-between gap-3 px-5">
             <div className="min-w-0 flex-1">
-              <h2 className="truncate font-display text-lg text-text">{location.name}</h2>
+              <h2 className="truncate font-display text-xl text-text">{location.name}</h2>
               <div className="mt-1 flex items-center gap-2">
                 <span className="font-accent text-xs font-medium text-text-soft">
                   {categoryLabel} | {secondLabel}

@@ -16,17 +16,17 @@
   --color-see: #7367fe;
   --color-do: #c9891f;
 
-  --color-bg: #ffffff;
-  --color-bg-elevated: #f7f7f5;
-  --color-surface: #efefec;
-  --color-surface-row: #e4e4e0;
+  --color-bg: #cecece;
+  --color-bg-elevated: #c6c6c6;
+  --color-surface: #bfbfbf;
+  --color-surface-row: #b6b6b6;
   --color-pill: rgba(117, 117, 117, 0.4);
-  --color-pill-border: #b9b9b6;
+  --color-pill-border: #a3a3a3;
   --color-text: #262626;
   --color-text-soft: #595959;
-  --color-text-faint: #807d7d;
+  --color-text-faint: #726f6f;
   --color-line: rgba(38, 38, 38, 0.12);
-  --color-scrim: rgba(255, 255, 255, 0.6);
+  --color-scrim: rgba(206, 206, 206, 0.6);
 
   --shadow-card: 0 12px 32px -12px rgba(20, 20, 20, 0.28);
   --shadow-pin: 0 6px 16px -4px rgba(20, 20, 20, 0.45);
@@ -140,11 +140,31 @@ body {
 
 /* The map surface itself: no card shadow, no hard border — the vignette
    overlay (a sibling element, see .map-vignette) is what fades the edges
-   into the surrounding page. */
+   into the surrounding page.
+
+   Position is handled by the two plain classes below rather than a
+   Tailwind utility (`absolute`/`relative` in the caller's className), and
+   for a specific reason: MapLibre itself adds its own `maplibregl-map`
+   class to this same container once it initializes, and MapLibre's
+   bundled stylesheet sets `position: relative` on it via an unlayered CSS
+   rule. Tailwind v4 emits its own utilities inside `@layer utilities` —
+   and per the CSS cascade-layers spec, ANY unlayered rule beats ANY
+   layered one regardless of specificity or source order. So a passed-in
+   `absolute` utility class can never win against MapLibre's own
+   unlayered `position: relative`, no matter how the className is
+   assembled — it silently stayed `relative` with no explicit height,
+   which is exactly what broke the full-screen map on the Place Page.
+   `.map-surface--overlay` below is itself a plain, unlayered rule (same
+   file, declared after the maplibre-gl.css import), so it reliably wins
+   that same cascade fight instead of trying to out-utility it. */
 .map-surface {
   position: relative;
   overflow: hidden;
   background: var(--color-bg);
+}
+.map-surface.map-surface--overlay {
+  position: absolute;
+  inset: 0;
 }
 .map-vignette {
   position: absolute;

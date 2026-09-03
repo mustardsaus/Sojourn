@@ -34,7 +34,7 @@ export function SearchBar({ value, onChange, onFocusChange, placeholder, classNa
             }}
             placeholder={placeholder ?? "Search by name, category etc"}
             aria-label="Search places"
-            className="w-full bg-transparent font-display text-xs text-text placeholder:text-text-faint focus:outline-none"
+            className="w-full bg-transparent font-display text-sm text-text placeholder:text-text-faint focus:outline-none"
           />
           {value && (
             <button

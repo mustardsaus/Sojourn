@@ -11,9 +11,10 @@ interface RouteMapProps {
   /** Actual road-network geometry ([lng, lat] pairs) once resolved. */
   route: [number, number][] | null;
   className?: string;
+  overlay?: boolean;
 }
 
-export function RouteMap({ origin, originCoordinates, destination, route, className }: RouteMapProps) {
+export function RouteMap({ origin, originCoordinates, destination, route, className, overlay }: RouteMapProps) {
   const markers: MapMarkerSpec[] = [
     origin.type === "current"
       ? { id: "route-origin", coordinates: originCoordinates, kind: "you" }
@@ -46,6 +47,7 @@ export function RouteMap({ origin, originCoordinates, destination, route, classN
       center={destination.coordinates}
       zoom={13}
       className={className}
+      overlay={overlay}
       markers={markers}
       route={route}
       fitBoundsTo={fitBoundsTo}

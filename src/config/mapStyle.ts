@@ -23,13 +23,18 @@ interface RoadPalette {
 }
 
 export const ROAD_PALETTES: Record<MapThemeName, RoadPalette> = {
-  // Background is the exact same white as the page (--color-bg) — the map
+  // Background is the exact same grey as the page (--color-bg) — the map
   // has no visual boundary of its own, just roads drawn onto the page.
+  // Road tones are scaled to keep the same relative contrast against this
+  // grey that they had against the old white background (e.g. minor roads
+  // were 79% as bright as the page; #c9c9c9 read that way on white but
+  // would nearly vanish against #cecece, so it's recalculated here rather
+  // than reused as-is).
   light: {
-    background: "#ffffff",
-    major: "#5c5c5c",
-    secondary: "#8a8a8a",
-    minor: "#c9c9c9",
+    background: "#cecece",
+    major: "#4a4a4a",
+    secondary: "#6f6f6f",
+    minor: "#a3a3a3",
   },
   // Kept dim and muted rather than near-white, so the network reads as
   // atmospheric illumination rather than high-contrast lines.

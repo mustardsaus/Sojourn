@@ -27,7 +27,7 @@ export function LocationRow({ location, onSelect, layoutId }: LocationRowProps) 
       <div className="relative h-[96px] w-[104px] shrink-0 overflow-hidden rounded-lg">
         <img src={location.image} alt="" loading="lazy" className="size-full object-cover" />
         <span
-          className="absolute bottom-1.5 left-1.5 rounded-full px-2 py-0.5 font-accent text-[9px] font-medium text-white"
+          className="absolute bottom-1.5 left-1.5 rounded-full px-2 py-0.5 font-accent text-[10px] font-medium text-white"
           style={{ backgroundColor: color }}
         >
           {categoryLabel}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import * as maplibregl from "maplibre-gl";
 // MapLibre resolves its worker script relative to its own module URL at
 // runtime, which breaks once Vite inlines it into our bundle (the request
@@ -33,6 +34,12 @@ interface MapViewProps {
   /** Recomputes and animates to bounds covering these points (e.g. a route's endpoints). */
   fitBoundsTo?: Coordinates[];
   className?: string;
+  /** True for a full-screen map that should absolutely fill its positioned
+   * ancestor (the Place Page) instead of sizing itself within normal flow
+   * (the Dashboard's fixed-height map card). See the `.map-surface--overlay`
+   * comment in index.css for why this can't just be a Tailwind `absolute`
+   * utility passed through `className`. */
+  overlay?: boolean;
   interactive?: boolean;
 }
 
@@ -67,6 +74,7 @@ export function MapView({
   route,
   fitBoundsTo,
   className,
+  overlay = false,
   interactive = true,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -149,7 +157,10 @@ export function MapView({
   useRouteLayer(map, route ?? null, theme === "dark" ? "dark" : "light");
 
   return (
-    <div ref={containerRef} className={`map-surface ${className ?? "size-full"}`}>
+    <div
+      ref={containerRef}
+      className={clsx("map-surface", overlay ? "map-surface--overlay" : "size-full", className)}
+    >
       <div className="map-vignette" />
     </div>
   );

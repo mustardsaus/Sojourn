@@ -26,7 +26,7 @@ export function LocationPreviewCard({ location, onGo, onDismiss }: LocationPrevi
         <img src={location.image} alt="" className="size-full object-cover" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="truncate font-display text-sm text-text">{location.name}</p>
+        <p className="truncate font-display text-base text-text">{location.name}</p>
         <div className="flex items-center gap-2">
           <span
             className="rounded-full px-2 py-0.5 font-accent text-[10px] font-medium text-white"

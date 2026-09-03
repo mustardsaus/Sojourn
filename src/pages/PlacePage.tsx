@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion, useMotionValue } from "framer-motion";
 import clsx from "clsx";
 import { Header } from "@/components/layout/Header";
+import { HeaderMapScrim } from "@/components/layout/HeaderMapScrim";
 import { RouteControls } from "@/components/place/RouteControls";
 import { RouteMap } from "@/components/place/RouteMap";
 import { PlaceDetailCard } from "@/components/place/PlaceDetailCard";
@@ -86,14 +87,15 @@ function PlacePageContent({ location, allLocations }: { location: Location; allL
         overlay
       />
 
-      {/* A solid, compact header bar — no map showing through it. It sits
-          right at the top edge (safe-area only, no extra breathing room
-          above it) and is sized to its own content rather than a fixed
-          band, so there's never a blank gap above the title. */}
+      {/* The map continues faintly behind the header — barely visible,
+          blended in rather than hard-cropped — instead of a flat opaque
+          bar sitting on top of it. Compact and hugging the top safe area
+          either way, so there's no blank gap above the title. */}
+      <HeaderMapScrim opacity={headerOpacity} />
       <motion.div
         style={{ opacity: headerOpacity }}
         className={clsx(
-          "absolute inset-x-0 top-0 z-30 rounded-b-[22px] bg-bg px-6 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-[0_12px_28px_-16px_rgba(0,0,0,0.35)]",
+          "absolute inset-x-0 top-0 z-30 px-6 pt-[max(0.75rem,env(safe-area-inset-top))]",
           snap === "full" ? "pointer-events-none" : "pointer-events-auto",
         )}
       >

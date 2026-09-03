@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, useMotionValue } from "framer-motion";
+import clsx from "clsx";
 import { Header } from "@/components/layout/Header";
+import { HeaderMapScrim } from "@/components/layout/HeaderMapScrim";
 import { RouteControls } from "@/components/place/RouteControls";
 import { RouteMap } from "@/components/place/RouteMap";
 import { PlaceDetailCard } from "@/components/place/PlaceDetailCard";
@@ -85,17 +87,27 @@ function PlacePageContent({ location, allLocations }: { location: Location; allL
         overlay
       />
 
-      {/* A soft top scrim keeps the floating header legible over whatever
-          the map happens to show underneath it, without a hard bar. */}
+      {/* The map doesn't end at the header — it continues underneath,
+          heavily blurred and faded into the page background, so the
+          header reads as a natural continuation of the same surface
+          rather than a bar sitting on top of a map. */}
+      <HeaderMapScrim opacity={headerOpacity} />
       <motion.div
         style={{ opacity: headerOpacity }}
-        className="pointer-events-none absolute inset-x-0 top-0 z-10 h-36 bg-gradient-to-b from-bg via-bg/60 to-transparent"
-      />
-      <motion.div
-        style={{ opacity: headerOpacity }}
-        className="pointer-events-none absolute inset-x-0 top-0 z-30 px-6 pt-[max(2rem,env(safe-area-inset-top))]"
+        className={clsx(
+          "absolute inset-x-0 top-0 z-30 px-6 pt-[max(2rem,env(safe-area-inset-top))]",
+          snap === "full" ? "pointer-events-none" : "pointer-events-auto",
+        )}
       >
         <Header titleBeforeAccent="Plotting your" interactive={snap !== "full"} />
+        <div className="mt-3">
+          <RouteControls
+            origin={route.origin}
+            onOriginChange={route.setOrigin}
+            destination={location}
+            savedLocations={allLocations}
+          />
+        </div>
       </motion.div>
 
       <BottomSheet
@@ -136,12 +148,6 @@ function PlacePageContent({ location, allLocations }: { location: Location; allL
         }
       >
         <div className="flex flex-col gap-4 px-5 pt-3 pb-[max(2rem,env(safe-area-inset-bottom))]">
-          <RouteControls
-            origin={route.origin}
-            onOriginChange={route.setOrigin}
-            destination={location}
-            savedLocations={allLocations}
-          />
           <PlaceDetailCard location={location} hideHeader />
         </div>
       </BottomSheet>

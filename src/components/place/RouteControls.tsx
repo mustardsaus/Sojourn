@@ -10,21 +10,25 @@ interface RouteControlsProps {
   savedLocations: Location[];
 }
 
+/** The From/To pair, lived inline in the floating header directly beneath
+ * "Plotting your Sojourn" — compact single-line rows rather than the
+ * larger labeled-field treatment this used to have as its own block in
+ * the drawer, since header real estate is tight and this needs to read
+ * as a quiet subtitle to the heading, not a competing form. */
 export function RouteControls({ origin, onOriginChange, destination, savedLocations }: RouteControlsProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const originLabel = origin.type === "current" ? "Your Current Location" : origin.location.name;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-1">
       <div className="relative">
-        <button onClick={() => setPickerOpen((v) => !v)} className="flex w-full flex-col gap-1 text-left">
-          <span className="font-body text-[10px] font-medium uppercase tracking-wide text-text-faint">From</span>
-          <span className="flex items-center justify-between font-display text-sm text-text">
-            <span className="truncate">{originLabel}</span>
-            <ChevronIcon open={pickerOpen} />
+        <button onClick={() => setPickerOpen((v) => !v)} className="flex w-full items-center gap-2 text-left">
+          <span className="shrink-0 font-body text-[10px] font-medium uppercase tracking-wide text-text-faint">
+            From
           </span>
+          <span className="min-w-0 flex-1 truncate font-display text-sm text-text-soft">{originLabel}</span>
+          <ChevronIcon open={pickerOpen} />
         </button>
-        <div className="mt-[7px] h-px w-full bg-line" />
 
         <AnimatePresence>
           {pickerOpen && (
@@ -63,10 +67,9 @@ export function RouteControls({ origin, onOriginChange, destination, savedLocati
         </AnimatePresence>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="font-body text-[10px] font-medium uppercase tracking-wide text-text-faint">To</span>
-        <span className="truncate font-display text-sm text-text">{destination.name}</span>
-        <div className="mt-[7px] h-px w-full bg-line" />
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 font-body text-[10px] font-medium uppercase tracking-wide text-text-faint">To</span>
+        <span className="min-w-0 flex-1 truncate font-display text-sm text-text-soft">{destination.name}</span>
       </div>
     </div>
   );
@@ -74,7 +77,15 @@ export function RouteControls({ origin, onOriginChange, destination, savedLocati
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <motion.svg animate={{ rotate: open ? 180 : 0 }} width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <motion.svg
+      animate={{ rotate: open ? 180 : 0 }}
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="shrink-0 text-text-faint"
+    >
       <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </motion.svg>
   );

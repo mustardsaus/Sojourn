@@ -9,21 +9,16 @@ interface ViewportLocationCardsProps {
   isLoading?: boolean;
 }
 
-/** The card rail synced to the map's current viewport. Following the
- * Figma reference, this renders as a stacked list inside a soft panel
- * rather than a horizontal rail — but each row still animates in/out as
- * the viewport set changes, so panning genuinely feels connected to the
- * map above it. */
+/** The scrollable card list synced to the map's current viewport, living
+ * inside the Dashboard's map drawer (see `Dashboard.tsx`) rather than a
+ * bounded section of its own — so no separate panel chrome here, the
+ * drawer itself is the frame. Each row still animates in/out as the
+ * viewport set changes, so panning genuinely feels connected to the map
+ * above it. */
 export function ViewportLocationCards({ locations, onSelect, isLoading }: ViewportLocationCardsProps) {
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 rounded-[10px] bg-bg-elevated p-3">
-      <div className="flex items-center justify-between px-1">
-        <p className="font-display text-xs text-text">In view</p>
-        <p className="font-body text-[11px] text-text-faint">
-          {locations.length} {locations.length === 1 ? "place" : "places"}
-        </p>
-      </div>
-      <div className="no-scrollbar flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto pb-1">
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="no-scrollbar flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto pb-1">
         <AnimatePresence mode="popLayout" initial={false}>
           {locations.length === 0 && !isLoading && (
             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

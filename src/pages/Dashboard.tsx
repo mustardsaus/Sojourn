@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue } from "framer-motion";
+import clsx from "clsx";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
+import { HeaderMapScrim } from "@/components/layout/HeaderMapScrim";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SearchResults } from "@/components/search/SearchResults";
 import { CategoryFilter } from "@/components/filters/CategoryFilter";
@@ -9,7 +11,7 @@ import { MapView } from "@/components/map/MapView";
 import type { MapMarkerSpec } from "@/hooks/useMapMarkers";
 import { LocationPreviewCard } from "@/components/cards/LocationPreviewCard";
 import { ViewportLocationCards } from "@/components/cards/ViewportLocationCards";
-import { MapLoadingOverlay } from "@/components/common/LoadingSpinner";
+import { BottomSheet, type SheetSnap } from "@/components/place/BottomSheet";
 import { EmptyState } from "@/components/common/EmptyState";
 import { useAppStore } from "@/store/useAppStore";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -30,7 +32,13 @@ export function Dashboard() {
   const [flyToToken, setFlyToToken] = useState(0);
   const [query, setQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [drawerSnap, setDrawerSnap] = useState<SheetSnap>("collapsed");
   const { results, isSearching } = useLocationSearch(query);
+  const searching = searchFocused || query.trim().length > 0;
+
+  // Fades the floating header out as the drawer approaches "full" — same
+  // pattern as the Place Page, so both drawers feel like the same system.
+  const headerOpacity = useMotionValue(1);
 
   useEffect(() => {
     locationRepository.getAll().then(setAllLocations);
@@ -73,14 +81,36 @@ export function Dashboard() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col bg-bg pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="px-6 pt-[max(2.5rem,env(safe-area-inset-top))]">
-        <Header titleBeforeAccent="Welcome to" />
+    <div className="fixed inset-0 overflow-hidden bg-bg">
+      {/* Full-bleed map — the same living background the Place Page uses,
+          with the location pins layered on top and the card drawer resting
+          over it rather than beneath it in its own section. */}
+      <MapView
+        center={geo.coordinates}
+        onBoundsChange={setBounds}
+        flyTo={selected?.coordinates}
+        flyToToken={flyToToken}
+        flyToZoom={15}
+        markers={allLocations ? markers : []}
+        overlay
+      />
+
+      {/* The map continues underneath the header, heavily blurred and
+          fading into the page — see HeaderMapScrim for why. */}
+      <HeaderMapScrim opacity={headerOpacity} />
+      <motion.div
+        style={{ opacity: headerOpacity }}
+        className={clsx(
+          "absolute inset-x-0 top-0 z-30 px-6 pt-[max(2.5rem,env(safe-area-inset-top))]",
+          drawerSnap === "full" ? "pointer-events-none" : "pointer-events-auto",
+        )}
+      >
+        <Header titleBeforeAccent="Welcome to" interactive={drawerSnap !== "full"} />
 
         <div className="relative mt-6">
           <SearchBar value={query} onChange={setQuery} onFocusChange={setSearchFocused} />
           <SearchResults
-            visible={searchFocused || query.trim().length > 0}
+            visible={searching}
             query={query}
             results={results}
             isSearching={isSearching}
@@ -88,7 +118,7 @@ export function Dashboard() {
           />
         </div>
 
-        {!(searchFocused || query.trim().length > 0) && (
+        {!searching && (
           <>
             <CategoryFilter value={activeFilter} onChange={setActiveFilter} className="mt-4" />
             <button
@@ -99,48 +129,84 @@ export function Dashboard() {
             </button>
           </>
         )}
-      </div>
+      </motion.div>
 
-      {!(searchFocused || query.trim().length > 0) && (
-        <div className="mt-4 flex flex-1 flex-col gap-4 px-6">
-          <div className="relative h-[400px] shrink-0 overflow-hidden rounded-[14px]">
-            {!allLocations && <MapLoadingOverlay />}
-            <MapView
-              center={geo.coordinates}
-              onBoundsChange={setBounds}
-              flyTo={selected?.coordinates}
-              flyToToken={flyToToken}
-              flyToZoom={15}
-              markers={allLocations ? markers : []}
-            />
-
-            <div className="pointer-events-none absolute inset-x-3 bottom-3">
-              <AnimatePresence>
-                {selected && (
-                  <div className="pointer-events-auto relative">
-                    <LocationPreviewCard location={selected} onGo={goToPlace} onDismiss={() => setSelected(null)} />
-                  </div>
-                )}
-              </AnimatePresence>
-            </div>
+      {!searching && (
+        <>
+          {/* The tapped-pin preview floats just above the drawer, never
+              competing with it for the same screen region. */}
+          <div className="pointer-events-none absolute inset-x-3 z-25 bottom-[calc(184px+env(safe-area-inset-bottom))]">
+            <AnimatePresence>
+              {selected && drawerSnap !== "full" && (
+                <div className="pointer-events-auto relative">
+                  <LocationPreviewCard location={selected} onGo={goToPlace} onDismiss={() => setSelected(null)} />
+                </div>
+              )}
+            </AnimatePresence>
           </div>
 
-          <motion.div layout className="min-h-[220px] flex-1">
-            {allLocations && allLocations.length === 0 ? (
-              <EmptyState
-                title="No places saved yet"
-                description="Places you save will start showing up here, pinned right where they belong."
-              />
-            ) : (
-              <ViewportLocationCards
-                locations={viewportLocations}
-                onSelect={goToPlace}
-                isLoading={!allLocations}
-              />
-            )}
-          </motion.div>
-        </div>
+          {/* The location-card drawer: layered directly over the map like
+              the Place Page's detail sheet, rather than a bounded section
+              beneath a bounded map card. Collapsed by default so the map
+              stays dominant; drag it up to browse what's in view. */}
+          <BottomSheet
+            snap={drawerSnap}
+            onSnapChange={setDrawerSnap}
+            onExpansionChange={(expansion) => headerOpacity.set(1 - expansion)}
+            peek={
+              <div className="flex flex-col gap-3 px-5">
+                <div className="flex items-center justify-between">
+                  <p className="font-display text-sm text-text">In view</p>
+                  <p className="font-body text-xs text-text-faint">
+                    {viewportLocations.length} {viewportLocations.length === 1 ? "place" : "places"}
+                  </p>
+                </div>
+                <ViewportPreviewStrip locations={viewportLocations} onSelect={goToPlace} />
+              </div>
+            }
+          >
+            <div className="h-full px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1">
+              {allLocations && allLocations.length === 0 ? (
+                <EmptyState
+                  title="No places saved yet"
+                  description="Places you save will start showing up here, pinned right where they belong."
+                />
+              ) : (
+                <ViewportLocationCards locations={viewportLocations} onSelect={goToPlace} isLoading={!allLocations} />
+              )}
+            </div>
+          </BottomSheet>
+        </>
       )}
+    </div>
+  );
+}
+
+/** A compact horizontally-scrolling row of thumbnail chips shown in the
+ * drawer's always-visible peek — a small taste of what's in the viewport
+ * so the collapsed drawer reads as "there are cards here, pull up" rather
+ * than just a bare label. The full cards live in the scrollable body. */
+function ViewportPreviewStrip({ locations, onSelect }: { locations: Location[]; onSelect: (location: Location) => void }) {
+  if (locations.length === 0) return null;
+  return (
+    <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
+      {locations.slice(0, 10).map((location) => (
+        <button
+          key={location.id}
+          onClick={(event) => {
+            // This chip sits inside the sheet's draggable peek header —
+            // stop the click from also being read as the start of a drag.
+            event.stopPropagation();
+            onSelect(location);
+          }}
+          onMouseDown={(event) => event.stopPropagation()}
+          onTouchStart={(event) => event.stopPropagation()}
+          className="flex shrink-0 items-center gap-2 rounded-full bg-surface-row py-1.5 pl-1.5 pr-3.5"
+        >
+          <img src={location.image} alt="" loading="lazy" className="size-8 shrink-0 rounded-full object-cover" />
+          <span className="max-w-[104px] truncate font-body text-xs text-text">{location.name}</span>
+        </button>
+      ))}
     </div>
   );
 }

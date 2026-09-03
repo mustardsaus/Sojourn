@@ -263,7 +263,10 @@ function useRouteLayer(map: maplibregl.Map | null, route: [number, number][] | n
 
 /** A very subtle, cinematic idle sway of the map's bearing around its own
  * center — alive but never disorienting — that starts as soon as the map
- * is ready and stops for good at the first sign of user interaction.
+ * is ready. The moment the user touches the map, the drift doesn't stop
+ * dead (which reads as the map abruptly "noticing" you and feels like a
+ * bug); instead its amplitude ramps down over a second or so, so it fades
+ * out the way a spinning coin settles rather than being switched off.
  * Skipped entirely under prefers-reduced-motion. */
 function useAmbientDrift(map: maplibregl.Map | null) {
   const rafRef = useRef<number | null>(null);
@@ -273,10 +276,14 @@ function useAmbientDrift(map: maplibregl.Map | null) {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let active = true;
-    const stop = () => {
-      if (!active) return;
-      active = false;
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    // 1 = full ambient amplitude, ramps to 0 over FADE_SECONDS once the
+    // user interacts, then the loop stops itself for good.
+    let fadeStart: number | null = null;
+    const FADE_SECONDS = 1.1;
+
+    const beginFade = () => {
+      if (fadeStart !== null) return;
+      fadeStart = performance.now();
     };
 
     const interactionEvents = [
@@ -288,15 +295,24 @@ function useAmbientDrift(map: maplibregl.Map | null) {
       "touchstart",
       "mousedown",
     ] as const;
-    interactionEvents.forEach((event) => map.on(event, stop));
+    interactionEvents.forEach((event) => map.on(event, beginFade));
 
     const start = performance.now();
     const PERIOD_SECONDS = 18;
     const AMPLITUDE_DEGREES = 3;
     const tick = (now: number) => {
       if (!active) return;
+      let amplitude = AMPLITUDE_DEGREES;
+      if (fadeStart !== null) {
+        const fadeElapsed = (now - fadeStart) / 1000;
+        if (fadeElapsed >= FADE_SECONDS) {
+          active = false;
+          return;
+        }
+        amplitude *= 1 - fadeElapsed / FADE_SECONDS;
+      }
       const t = (now - start) / 1000;
-      map.setBearing(Math.sin((t / PERIOD_SECONDS) * Math.PI * 2) * AMPLITUDE_DEGREES);
+      map.setBearing(Math.sin((t / PERIOD_SECONDS) * Math.PI * 2) * amplitude);
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -304,7 +320,7 @@ function useAmbientDrift(map: maplibregl.Map | null) {
     return () => {
       active = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      interactionEvents.forEach((event) => map.off(event, stop));
+      interactionEvents.forEach((event) => map.off(event, beginFade));
     };
   }, [map]);
 }

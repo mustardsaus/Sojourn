@@ -24,10 +24,16 @@ export function NotesField({ location }: NotesFieldProps) {
 
   if (notes.kind === "to-eat") {
     if (!notes.youJustGotta) return null;
+    // The signature recommendation for a place gets its own slightly
+    // larger, more generously spaced treatment rather than the compact
+    // metadata-row styling every other notes section uses — editorial
+    // rather than compressed, without ballooning past the rest of the
+    // page's hierarchy.
     return (
-      <Section label={config.notesField.label}>
-        <p className="font-script text-base leading-normal text-eat">{notes.youJustGotta}</p>
-      </Section>
+      <div className="flex flex-col gap-3 px-5 py-1">
+        <p className="font-display text-sm text-text">{config.notesField.label}</p>
+        <p className="font-script text-lg leading-relaxed text-eat">{notes.youJustGotta}</p>
+      </div>
     );
   }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion, useMotionValue } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import clsx from "clsx";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
@@ -8,6 +8,7 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { SearchResults } from "@/components/search/SearchResults";
 import { CategoryFilter } from "@/components/filters/CategoryFilter";
 import { MapView } from "@/components/map/MapView";
+import { MapRevealVeil } from "@/components/map/MapRevealVeil";
 import type { MapMarkerSpec } from "@/hooks/useMapMarkers";
 import { LocationPreviewCard } from "@/components/cards/LocationPreviewCard";
 import { ViewportLocationCards } from "@/components/cards/ViewportLocationCards";
@@ -19,6 +20,13 @@ import { useLocationSearch } from "@/hooks/useLocationSearch";
 import { locationRepository } from "@/data/repository";
 import { filterByBounds, type MapBounds } from "@/lib/geo";
 import type { Location } from "@/types/location";
+import { hasIntroPlayed, markIntroPlayed } from "@/lib/introFlag";
+import {
+  introItemVariants,
+  introItemVariantsDelayed,
+  introItemVariantsReduced,
+  introItemVariantsReducedDelayed,
+} from "@/lib/introMotion";
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -39,6 +47,23 @@ export function Dashboard() {
   // Fades the floating header out as the drawer approaches "full" — same
   // pattern as the Place Page, so both drawers feel like the same system.
   const headerOpacity = useMotionValue(1);
+
+  // Cinematic first-load sequence (see MapRevealVeil / consumeIntroFlag):
+  // `playIntro` is decided exactly once, the very first time any page
+  // mounts, and stays false for every navigation after that — so this
+  // never replays when the user bounces between the dashboard and a
+  // place page. `uiRevealed` flips once the map's own reveal finishes,
+  // which is what brings the header and drawer in.
+  const [playIntro] = useState(() => !hasIntroPlayed());
+  const prefersReducedMotion = useReducedMotion();
+  const [uiRevealed, setUiRevealed] = useState(false);
+  const headerVariants = prefersReducedMotion ? introItemVariantsReduced : introItemVariants;
+  const drawerVariants = prefersReducedMotion ? introItemVariantsReducedDelayed : introItemVariantsDelayed;
+
+  useEffect(() => {
+    if (playIntro) markIntroPlayed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     locationRepository.getAll().then(setAllLocations);
@@ -95,11 +120,47 @@ export function Dashboard() {
         overlay
       />
 
+      {/* The map's first appearance on a true first load: a soft,
+          center-outward reveal rather than a fade or a spinner. No-op
+          (renders nothing) on every later navigation. */}
+      <MapRevealVeil active={playIntro} onDone={() => setUiRevealed(true)} />
+
       {/* The map continues faintly behind the header — barely visible,
           blended in rather than hard-cropped — instead of a flat opaque
           bar sitting on top of it. Compact and hugging the top safe area
           either way, so there's no blank gap above the title. */}
       <HeaderMapScrim opacity={headerOpacity} />
+      {playIntro ? (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-30"
+          initial="hidden"
+          animate={uiRevealed ? "visible" : "hidden"}
+          variants={headerVariants}
+        >
+          {headerBlockContent()}
+        </motion.div>
+      ) : (
+        headerBlockContent()
+      )}
+
+      {!searching &&
+        (playIntro ? (
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-20"
+            initial="hidden"
+            animate={uiRevealed ? "visible" : "hidden"}
+            variants={drawerVariants}
+          >
+            {drawerBlockContent()}
+          </motion.div>
+        ) : (
+          drawerBlockContent()
+        ))}
+    </div>
+  );
+
+  function headerBlockContent() {
+    return (
       <motion.div
         style={{ opacity: headerOpacity }}
         className={clsx(
@@ -132,56 +193,59 @@ export function Dashboard() {
           </>
         )}
       </motion.div>
+    );
+  }
 
-      {!searching && (
-        <>
-          {/* The tapped-pin preview floats just above the drawer, never
-              competing with it for the same screen region. */}
-          <div className="pointer-events-none absolute inset-x-3 z-25 bottom-[calc(184px+env(safe-area-inset-bottom))]">
-            <AnimatePresence>
-              {selected && drawerSnap !== "full" && (
-                <div className="pointer-events-auto relative">
-                  <LocationPreviewCard location={selected} onGo={goToPlace} onDismiss={() => setSelected(null)} />
-                </div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* The location-card drawer: layered directly over the map like
-              the Place Page's detail sheet, rather than a bounded section
-              beneath a bounded map card. Collapsed by default so the map
-              stays dominant; drag it up to browse what's in view. */}
-          <BottomSheet
-            snap={drawerSnap}
-            onSnapChange={setDrawerSnap}
-            onExpansionChange={(expansion) => headerOpacity.set(1 - expansion)}
-            peek={
-              <div className="flex flex-col gap-3 px-5">
-                <div className="flex items-center justify-between">
-                  <p className="font-display text-sm text-text">In view</p>
-                  <p className="font-body text-xs text-text-faint">
-                    {viewportLocations.length} {viewportLocations.length === 1 ? "place" : "places"}
-                  </p>
-                </div>
-                <ViewportPreviewStrip locations={viewportLocations} onSelect={goToPlace} />
+  function drawerBlockContent() {
+    return (
+      <>
+        {/* The tapped-pin preview floats just above the drawer, never
+            competing with it for the same screen region. */}
+        <div className="pointer-events-none absolute inset-x-3 z-25 bottom-[calc(184px+env(safe-area-inset-bottom))]">
+          <AnimatePresence>
+            {selected && drawerSnap !== "full" && (
+              <div className="pointer-events-auto relative">
+                <LocationPreviewCard location={selected} onGo={goToPlace} onDismiss={() => setSelected(null)} />
               </div>
-            }
-          >
-            <div className="h-full px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1">
-              {allLocations && allLocations.length === 0 ? (
-                <EmptyState
-                  title="No places saved yet"
-                  description="Places you save will start showing up here, pinned right where they belong."
-                />
-              ) : (
-                <ViewportLocationCards locations={viewportLocations} onSelect={goToPlace} isLoading={!allLocations} />
-              )}
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* The location-card drawer: layered directly over the map like
+            the Place Page's detail sheet, rather than a bounded section
+            beneath a bounded map card. Collapsed by default so the map
+            stays dominant; drag it up to browse what's in view. */}
+        <BottomSheet
+          snap={drawerSnap}
+          onSnapChange={setDrawerSnap}
+          onExpansionChange={(expansion) => headerOpacity.set(1 - expansion)}
+          className="pointer-events-auto"
+          peek={
+            <div className="flex flex-col gap-3 px-5">
+              <div className="flex items-center justify-between">
+                <p className="font-display text-sm text-text">In view</p>
+                <p className="font-body text-xs text-text-faint">
+                  {viewportLocations.length} {viewportLocations.length === 1 ? "place" : "places"}
+                </p>
+              </div>
+              <ViewportPreviewStrip locations={viewportLocations} onSelect={goToPlace} />
             </div>
-          </BottomSheet>
-        </>
-      )}
-    </div>
-  );
+          }
+        >
+          <div className="h-full px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1">
+            {allLocations && allLocations.length === 0 ? (
+              <EmptyState
+                title="No places saved yet"
+                description="Places you save will start showing up here, pinned right where they belong."
+              />
+            ) : (
+              <ViewportLocationCards locations={viewportLocations} onSelect={goToPlace} isLoading={!allLocations} />
+            )}
+          </div>
+        </BottomSheet>
+      </>
+    );
+  }
 }
 
 /** A compact horizontally-scrolling row of thumbnail chips shown in the

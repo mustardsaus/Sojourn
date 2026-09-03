@@ -15,15 +15,19 @@ interface RouteMapProps {
 }
 
 export function RouteMap({ origin, originCoordinates, destination, route, className, overlay }: RouteMapProps) {
+  // A saved location gets its own category-colored dot, same as everywhere
+  // else on the map; "current position" and an arbitrary searched place
+  // (which has no Sojourn category of its own) both fall back to the
+  // generic "you"-style marker just to mark the start of the route clearly.
   const markers: MapMarkerSpec[] = [
-    origin.type === "current"
-      ? { id: "route-origin", coordinates: originCoordinates, kind: "you" }
-      : {
+    origin.type === "location"
+      ? {
           id: "route-origin",
           coordinates: originCoordinates,
           kind: "category",
           category: origin.location.topLevelCategory,
-        },
+        }
+      : { id: "route-origin", coordinates: originCoordinates, kind: "you" },
     {
       id: "route-destination",
       coordinates: destination.coordinates,

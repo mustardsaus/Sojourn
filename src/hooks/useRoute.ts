@@ -2,15 +2,30 @@ import { useMemo, useState } from "react";
 import type { Coordinates, Location } from "@/types/location";
 import { useGeolocation } from "./useGeolocation";
 import { useRoadRoute } from "./useRoadRoute";
+import type { PlaceResult } from "./usePlaceSearch";
 import { distanceKm, estimateTravelMinutes, formatDuration, googleMapsDirectionsUrl } from "@/lib/geo";
 
-export type RouteOrigin = { type: "current" } | { type: "location"; location: Location };
+/** Three distinct ways a route can start: the device's live position, one
+ * of Sojourn's own saved locations, or an arbitrary real-world place found
+ * via `usePlaceSearch` (any address, landmark, or POI — not limited to
+ * what's saved in the app). All three ultimately just need to resolve to
+ * coordinates below; nothing downstream (road routing, distance/time)
+ * cares which kind it is. */
+export type RouteOrigin =
+  | { type: "current" }
+  | { type: "location"; location: Location }
+  | { type: "place"; place: PlaceResult };
 
 export function useRoute(destination: Location) {
   const [origin, setOrigin] = useState<RouteOrigin>({ type: "current" });
   const geo = useGeolocation();
 
-  const originCoordinates: Coordinates = origin.type === "current" ? geo.coordinates : origin.location.coordinates;
+  const originCoordinates: Coordinates =
+    origin.type === "current"
+      ? geo.coordinates
+      : origin.type === "location"
+        ? origin.location.coordinates
+        : origin.place.coordinates;
 
   const { route, status } = useRoadRoute(originCoordinates, destination.coordinates);
 

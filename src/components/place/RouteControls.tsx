@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Location } from "@/types/location";
 import type { RouteOrigin } from "@/hooks/useRoute";
-import { useLocationSearch } from "@/hooks/useLocationSearch";
+import { usePlaceSearch, type PlaceResult } from "@/hooks/usePlaceSearch";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 
 interface RouteControlsProps {
@@ -13,6 +13,7 @@ interface RouteControlsProps {
 }
 
 const CURRENT_LOCATION_LABEL = "Your Current Location";
+const MAX_SAVED_SUGGESTIONS = 5;
 
 /** The From/To pair, lived inline in the floating header directly beneath
  * "Plotting your Sojourn" — compact single-line rows rather than the
@@ -25,22 +26,35 @@ const CURRENT_LOCATION_LABEL = "Your Current Location";
  * from there. Selecting a location only ever changes `origin` — the
  * actual road route, distance, and time all come from `useRoute` (via
  * `useRoadRoute`) recomputing against the new coordinates, same as
- * before; this component just needs to call `onOriginChange`. */
+ * before; this component just needs to call `onOriginChange`.
+ *
+ * The search itself draws from two genuinely separate pools, shown as two
+ * groups rather than merged into one: Sojourn's own saved locations (a
+ * quick way to reuse a place already in the app) and real-world results
+ * from `usePlaceSearch` (any address, landmark, neighborhood, or other
+ * searchable place — never limited to what's saved here). Picking either
+ * kind sets the same `origin`, just a different variant of it. */
 export function RouteControls({ origin, onOriginChange, destination, savedLocations }: RouteControlsProps) {
   const [focused, setFocused] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { results, isSearching } = useLocationSearch(query);
+  const { results: placeResults, isSearching, status: placeStatus } = usePlaceSearch(query);
 
-  const originLabel = origin.type === "current" ? CURRENT_LOCATION_LABEL : origin.location.name;
+  const originLabel =
+    origin.type === "current" ? CURRENT_LOCATION_LABEL : origin.type === "location" ? origin.location.name : origin.place.name;
   const trimmed = query.trim();
 
-  const suggestions = useMemo(() => {
-    const pool = trimmed ? results : savedLocations;
-    return pool.filter((l) => l.id !== destination.id).slice(0, 8);
-  }, [trimmed, results, savedLocations, destination.id]);
+  const savedMatches = useMemo(() => {
+    const pool = savedLocations.filter((l) => l.id !== destination.id);
+    if (!trimmed) return pool.slice(0, 8);
+    const needle = trimmed.toLowerCase();
+    return pool.filter((l) => l.name.toLowerCase().includes(needle)).slice(0, MAX_SAVED_SUGGESTIONS);
+  }, [trimmed, savedLocations, destination.id]);
 
   const showCurrentOption = !trimmed || CURRENT_LOCATION_LABEL.toLowerCase().includes(trimmed.toLowerCase());
+  const showPlaceGroup = trimmed.length > 0;
+  const noMatches =
+    trimmed.length > 0 && !isSearching && placeStatus !== "error" && savedMatches.length === 0 && placeResults.length === 0 && !showCurrentOption;
 
   function close() {
     setFocused(false);
@@ -55,6 +69,11 @@ export function RouteControls({ origin, onOriginChange, destination, savedLocati
 
   function selectLocation(location: Location) {
     onOriginChange({ type: "location", location });
+    close();
+  }
+
+  function selectPlace(place: PlaceResult) {
+    onOriginChange({ type: "place", place });
     close();
   }
 
@@ -77,7 +96,7 @@ export function RouteControls({ origin, onOriginChange, destination, savedLocati
               setQuery("");
             }}
             onBlur={() => setFocused(false)}
-            placeholder="Search a location…"
+            placeholder="Search any location…"
             aria-label="Route origin"
             className="min-w-0 flex-1 truncate bg-transparent font-display text-sm text-text-soft placeholder:text-text-faint focus:outline-none"
           />
@@ -90,7 +109,7 @@ export function RouteControls({ origin, onOriginChange, destination, savedLocati
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.98 }}
               transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-              className="no-scrollbar absolute left-0 right-0 top-full z-20 mt-2 max-h-56 overflow-y-auto rounded-xl bg-surface p-1 shadow-card"
+              className="no-scrollbar absolute left-0 right-0 top-full z-20 mt-2 max-h-64 overflow-y-auto rounded-xl bg-surface p-1 shadow-card"
             >
               {showCurrentOption && (
                 // onMouseDown (not onClick) fires before the input's blur,
@@ -105,25 +124,60 @@ export function RouteControls({ origin, onOriginChange, destination, savedLocati
                   {CURRENT_LOCATION_LABEL}
                 </button>
               )}
-              {trimmed && isSearching && suggestions.length === 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 font-body text-xs text-text-faint">
-                  <LoadingSpinner className="size-3 text-text-faint" />
-                  Searching…
+
+              {savedMatches.length > 0 && (
+                <div className="mt-0.5">
+                  {trimmed && (
+                    <p className="px-3 pb-1 pt-1.5 font-body text-[10px] font-medium uppercase tracking-wide text-text-faint">
+                      Your saved places
+                    </p>
+                  )}
+                  {savedMatches.map((location) => (
+                    <button
+                      key={location.id}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => selectLocation(location)}
+                      className="w-full truncate rounded-lg px-3 py-2 text-left font-body text-sm text-text hover:bg-pill"
+                    >
+                      {location.name}
+                    </button>
+                  ))}
                 </div>
               )}
-              {trimmed && !isSearching && suggestions.length === 0 && !showCurrentOption && (
-                <div className="px-3 py-2 font-body text-xs text-text-faint">No places match that</div>
+
+              {showPlaceGroup && (
+                <div className="mt-0.5">
+                  <p className="px-3 pb-1 pt-1.5 font-body text-[10px] font-medium uppercase tracking-wide text-text-faint">
+                    Search results
+                  </p>
+                  {isSearching && placeResults.length === 0 && (
+                    <div className="flex items-center gap-2 px-3 py-2 font-body text-xs text-text-faint">
+                      <LoadingSpinner className="size-3 text-text-faint" />
+                      Searching…
+                    </div>
+                  )}
+                  {placeStatus === "error" && (
+                    <div className="px-3 py-2 font-body text-xs text-text-faint">
+                      Couldn't reach place search — try again
+                    </div>
+                  )}
+                  {placeResults.map((place) => (
+                    <button
+                      key={place.id}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => selectPlace(place)}
+                      className="flex w-full flex-col items-start rounded-lg px-3 py-2 text-left hover:bg-pill"
+                    >
+                      <span className="w-full truncate font-body text-sm text-text">{place.name}</span>
+                      {place.secondaryLabel && (
+                        <span className="w-full truncate font-body text-xs text-text-faint">{place.secondaryLabel}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               )}
-              {suggestions.map((location) => (
-                <button
-                  key={location.id}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => selectLocation(location)}
-                  className="w-full truncate rounded-lg px-3 py-2 text-left font-body text-sm text-text hover:bg-pill"
-                >
-                  {location.name}
-                </button>
-              ))}
+
+              {noMatches && <div className="px-3 py-2 font-body text-xs text-text-faint">No places match that</div>}
             </motion.div>
           )}
         </AnimatePresence>
